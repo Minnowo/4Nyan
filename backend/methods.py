@@ -3,6 +3,8 @@ import exceptions
 import constants 
 import os 
 import reg
+import status_codes
+
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi import Response
 
@@ -53,9 +55,13 @@ def get_image(image_name : str, request : Request):
     return FileResponse(image_name)
 
 
-
-#  https://github.com/tiangolo/fastapi/issues/1240
 def get_video(video_name : str, request : Request):
+    return get_video_2(video_name,request)
+
+
+# https://stribny.name/blog/2020/07/real-time-data-streaming-using-fastapi-and-websockets/
+#  https://github.com/tiangolo/fastapi/issues/1240
+def get_video_1(video_name : str, request : Request):
 
     if request is None:
         raise exceptions.API_400_BAD_REQUEST_EXCEPTION
@@ -69,7 +75,7 @@ def get_video(video_name : str, request : Request):
 
     # get start byte range from header, default to 0 
     _range = reg.RANGE_HEADER.search(
-                                request.headers.get("Range", "bytes=0-"))
+                                request.headers.get("range", "bytes=0-"))
 
     if not _range: # doesn't match regex, bad header request 
         raise exceptions.API_400_BAD_REQUEST_EXCEPTION
@@ -83,18 +89,57 @@ def get_video(video_name : str, request : Request):
                                 start=start_byte_requested,
                                 size=BYTES_PER_RESPONSE
                             )
-                            
+    
     return StreamingResponse(
         chunk_generator,
         headers={
             "Accept-Ranges": "bytes",
             "Content-Range": f"bytes {start_byte_requested}-{end_byte_planned}/{total_response_size}",
-            "Content-Type": "video/mp4"
+            "Content-Type": "video/mkv"
         },
         status_code=206
     )
+
+
+def get_video_2(video_name : str, request : Request):
+    
+    if request is None:
+        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+
+    # file name check
+    video_name = file_check(video_name, "static\\v\\")
+
+    stream = open(video_name, "rb")
+
+    total_response_size = os.stat(video_name).st_size
+
+    # get start byte range from header, default to 0 
+    _range = reg.RANGE_HEADER.search(
+                                request.headers.get("range", "bytes=0-"))
+
+    if not _range: # doesn't match regex, bad header request 
+        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+
+    start_byte_requested = int(_range.group(1))
+    end_byte_planned     = min(start_byte_requested + BYTES_PER_RESPONSE, total_response_size)
+
+    with open(video_name, "rb") as reader:
+
+        reader.seek(start_byte_requested)
+
+        data = reader.read(end_byte_planned)
+
+        headers={
+            "Accept-Ranges" : "bytes",
+            "Content-Range" : f"bytes {start_byte_requested}-{end_byte_planned}/{total_response_size}",
+            "Content-Type"  : "video/mp4"
+        }
+        return Response(data, status_code=status_codes.PARTIAL_RESPONSE, headers=headers)
+
+
 
 CATEGORY_MAP = {
     "i" : get_image,
     "v" : get_video
 }
+
