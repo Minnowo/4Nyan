@@ -11,3 +11,5 @@ UP_DIRECTORY_LEVEL = compile(r"[/\\]\.\.[/\\]")
 REMOVE_INVALID_SIGNUP_NAME = compile(r"[^\-a-zA-Z]")
 
 RANGE_HEADER = compile(r"bytes=([0-9]+)\-")
+
+DIGIT = compile(r"([0-9]+)")

@@ -40,3 +40,5 @@ API_406_EMPTY_CART_EXCEPTION = HTTPException(
     status_code=406,
     detail="cart is empy"
 )
+
+

@@ -54,14 +54,9 @@ def get_image(image_name : str, request : Request):
 
     return FileResponse(image_name)
 
-
-def get_video(video_name : str, request : Request):
-    return get_video_2(video_name,request)
-
-
 # https://stribny.name/blog/2020/07/real-time-data-streaming-using-fastapi-and-websockets/
 #  https://github.com/tiangolo/fastapi/issues/1240
-def get_video_1(video_name : str, request : Request):
+def DEPRICATED_get_video_1(video_name : str, request : Request):
 
     if request is None:
         raise exceptions.API_400_BAD_REQUEST_EXCEPTION
@@ -101,15 +96,13 @@ def get_video_1(video_name : str, request : Request):
     )
 
 
-def get_video_2(video_name : str, request : Request):
+def get_video(video_name : str, request : Request):
     
     if request is None:
         raise exceptions.API_400_BAD_REQUEST_EXCEPTION
 
     # file name check
     video_name = file_check(video_name, "static\\v\\")
-
-    stream = open(video_name, "rb")
 
     total_response_size = os.stat(video_name).st_size
 
@@ -136,10 +129,13 @@ def get_video_2(video_name : str, request : Request):
         }
         return Response(data, status_code=status_codes.PARTIAL_RESPONSE, headers=headers)
 
+def get_m3u3(file : str, request : Request):
+    pass 
 
 
 CATEGORY_MAP = {
     "i" : get_image,
-    "v" : get_video
+    "v" : get_video,
+    "s" : get_m3u3
 }
 

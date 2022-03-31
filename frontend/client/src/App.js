@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import './App.css';
 import Default from './components/Default';
+import VideoPage from './components/VideoPage'
 import {BrowserRouter as Router,Routes,Route} from "react-router-dom";
  
 class App extends Component {
@@ -43,6 +44,7 @@ state = {
       <Router>
         <Routes>
       <Route path="/" element={<Default />}></Route>
+      <Route path="/Video" element={<VideoPage />}></Route>
       </Routes>
       </Router>
     );

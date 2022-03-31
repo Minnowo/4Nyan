@@ -1,5 +1,4 @@
-backend/static/v
-backend/static/i
+*static/
 
 # JetBrains PyCharm and WebStorm stuff
 frontend/.idea

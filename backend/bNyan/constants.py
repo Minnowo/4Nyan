@@ -5,6 +5,9 @@ IS_WINDOWS = (os.name == "nt")
 MAX_IMG_PATH_LENGTH = 100
 MIN_IMG_PATH_LENGTH = 3
 
+FFMPEG_PATH = ""
+FFPROBE_PATH = ""
+
 STATIC_IMAGES_PATH = "/static/images/"
 APP_ROOT = "./"
 
