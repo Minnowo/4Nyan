@@ -2,11 +2,13 @@ import React, { Component } from "react";
 
 import Hls from "hls.js";
 
+import "../css/video.css"
+
 export default class Video extends Component {
   
   state = {
     "m3u8" : this.props.m3u8,
-    "autoPlay" : false
+    "autoPlay" : this.props.autoPlay
   }
 
   componentDidMount () 
@@ -54,7 +56,8 @@ export default class Video extends Component {
       return (
         <div>
           {/* what is this doing?? where does this.player get set? is it here? what does 'controls' mean??? */}
-          <video controls onClick={this._onTouchInsidePlayer} ref={player => (this.player = player)} autoPlay={this.state.autoPlay}/>
+          <video className="video" controls onClick={this._onTouchInsidePlayer} ref={player => (this.player = player)} autoPlay={this.state.autoPlay}>
+          </video>
         </div>
       );
     }

@@ -153,10 +153,10 @@ def stream_video(video_name : str, request : Request):
 
 
 def get_video(video_name : str, request : Request):
-    """ Returns a full video with a 200 request, this is used for the m3u8 files to have a direct link """
+    """ Returns a full video with a 200 request, this is used to transer .ts video files for hls"""
 
     # file name check
-    video_name = file_check(video_name, "static\\v\\", [reg.INVALID_PATH_WITHOUT_SEP.sub])
+    video_name = file_check(video_name, "static\\v\\", [reg.INVALID_PATH_WITHOUT_SEP.sub]) # allow / and \ in the path name
     
     total_response_size = os.stat(video_name).st_size
 
@@ -176,11 +176,7 @@ def get_m3u8(file : str, request : Request):
     
     file = file_check(file, "static\\m3u8\\")
 
-    headers = {
-        # "Content-Type" : "application/x-mpegURL"
-        }
-
-    return FileResponse(file, status_code=status_codes.RESPONSE, headers=headers)
+    return FileResponse(file, status_code=status_codes.RESPONSE)
 
 
 CATEGORY_MAP = {

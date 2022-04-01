@@ -11,7 +11,12 @@ app = FastAPI()
 
 origins = [
     "http://localhost:722",
-    "localhost:722"
+    "localhost:722",
+    "0.0.0.0:722",
+    
+    # frontend 
+    "http://192.168.1.149:722",
+    "192.168.1.149:722",
 ]
 
 app.add_middleware(
@@ -51,27 +56,19 @@ def main():
 
     return 0
 
-# def m3u8_test():
+def m3u8_test():
 
-#     from .m3u8 import PlaylistGenerator, VideoSplitter
+    from .m3u8 import PlaylistGenerator, VideoSplitter
 
-#     playlist_entries = [
-#                             {
-#                             'name':  "Awesomevideo_001.mp4",
-#                             'duration' : '10.04',
-#                             }
-#             ]
+    output = "D:\\Programming\\.PROJECTS\\4Nyan\\backend\\bNyan\\static\\v\\RnM_S4E1\\"
+    segment_size = 10
+    splitter = VideoSplitter("X:\\ffmpeg\\ffmpeg.exe", "X:\\ffmpeg\\ffprobe.exe")
+    splitter.split_video("D:\\Programming\\.PROJECTS\\4Nyan\\backend\\bNyan\\static\\v\\Rick and Morty - S04E01.mkv", output, segment_size)
 
-#     playlist = PlaylistGenerator(playlist_entries).generate()
+    entries = PlaylistGenerator.generate_from_directory("http://192.168.1.149:721/static/v/" + os.path.basename(output), output, segment_size)
 
-#     output = "D:\\Programming\\.PROJECTS\\4Nyan\\backend\\bNyan\\static\\v\\split\\"
-#     splitter = VideoSplitter("X:\\ffmpeg\\ffmpeg.exe", "X:\\ffmpeg\\ffprobe.exe")
-#     splitter.split_video("D:\\Programming\\.PROJECTS\\4Nyan\\backend\\bNyan\\static\\v\\fall2.mp4", output, 10)
-
-#     entries = PlaylistGenerator.generate_from_directory("http://192.168.1.149:721/static/v/split/", output, 10)
-
-#     print(entries)
-#     return 0
+    print(entries)
+    return 0
 
 # from flask import Flask
 
