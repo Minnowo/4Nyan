@@ -1,6 +1,8 @@
 import logging
 import os 
+
 from subprocess import run, PIPE
+from requests.utils import requote_uri
 
 from .. import util
 from .. import constants
@@ -13,14 +15,14 @@ logger = logging.getLogger(__name__)
 class PlaylistGenerator(object):
 
     @classmethod
-    def generate_from_directory(cls, directory, segment_size):
+    def generate_from_directory(cls, api_link, directory, segment_size):
 
         template = []
 
         for file in sorted(os.listdir(directory), key=util.natural_sort_key):
 
             template.append({
-                "name" : file,
+                "name" : requote_uri(api_link + file),
                 "duration" : segment_size
             })
 
@@ -32,14 +34,14 @@ class PlaylistGenerator(object):
         if playlist_entries == None:
             raise Exception
 
-        self.end_playlist = True
         self.playlist_entries = playlist_entries
         self.version = version
         self.sequence = 0
         self.duration = self.duration()
 
     def _generate_playlist(self):
-        playlist = "{}\n{}".format(self._m3u8_header_template(), self._generate_playlist_entries())
+        header = "#EXTM3U\n#EXT-X-VERSION:{version}\n#EXT-X-MEDIA-SEQUENCE:{sequence}\n#EXT-X-TARGETDURATION:{duration}".format(version=self.version, sequence=self.sequence, duration=self.duration).strip()
+        playlist = "{}\n{}".format(header, self._generate_playlist_entries())
 
         return playlist
 
@@ -51,16 +53,8 @@ class PlaylistGenerator(object):
         return playlist.replace(" ", "")
 
 
-    def _generate(self):
-        return self._generate_playlist()
-
-    def _m3u8_header_template(self):
-        header = "#EXTM3U\n#EXT-X-VERSION:{version}\n#EXT-X-MEDIA-SEQUENCE:{sequence}\n#EXT-X-TARGETDURATION:{duration}".format(version=self.version, sequence=self.sequence, duration=self.duration).strip()
-
-        if self.end_playlist:
-            return "{}\n#EXT-X-ENDLIST".format(header)
-        else:
-            return header
+    def generate(self):
+        return self._generate_playlist() + "#EXT-X-ENDLIST"
 
     def duration(self):
         duration_total = 0
@@ -72,11 +66,6 @@ class PlaylistGenerator(object):
                     logger.exception(e)
 
         return duration_total
-
-    def generate(self):
-        """ This is a proxy for _generate makes it
-        difficult to edit the real method for future."""
-        return self._generate()
 
 
 class VideoSplitter():

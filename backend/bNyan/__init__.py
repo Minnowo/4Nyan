@@ -1,16 +1,17 @@
 
-import exceptions
-
+import os 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from methods import CATEGORY_MAP
+import exceptions
+import methods 
+import reg
 
 app = FastAPI()
 
 origins = [
-    "http://localhost:3000",
-    "localhost:3000"
+    "http://localhost:722",
+    "localhost:722"
 ]
 
 app.add_middleware(
@@ -26,18 +27,19 @@ app.add_middleware(
 async def get_item():
     return "hello world"
 
-@app.get('/static/{category}/')
-async def get_item1(category : str):
-    return category 
-
 
 @app.get('/static/{category}/{path}')
-async def staticv1(category: str, path: str, request : Request):
-    
-    cat = CATEGORY_MAP.get(category, None)
+async def staticv1(category: str, path: str, request : Request, ts : str = ""):
 
+    cat = methods.CATEGORY_MAP.get(category, None)
+    
     if cat is None:
         raise exceptions.API_404_NOT_FOUND_EXCEPTION
+
+    if ts: # should probably check category or make the function just take the ts arg 
+        ts = reg.INVALID_PATH_CHAR.sub("", ts)
+
+        return methods.get_video(os.path.join(path, ts), request)
 
     return cat(path, request)
 
@@ -49,27 +51,27 @@ def main():
 
     return 0
 
-def m3u8_test():
+# def m3u8_test():
 
-    from .m3u8 import PlaylistGenerator, VideoSplitter
+#     from .m3u8 import PlaylistGenerator, VideoSplitter
 
-    playlist_entries = [
-                            {
-                            'name':  "Awesomevideo_001.mp4",
-                            'duration' : '10.04',
-                            }
-            ]
+#     playlist_entries = [
+#                             {
+#                             'name':  "Awesomevideo_001.mp4",
+#                             'duration' : '10.04',
+#                             }
+#             ]
 
-    playlist = PlaylistGenerator(playlist_entries).generate()
+#     playlist = PlaylistGenerator(playlist_entries).generate()
 
-    output = "D:\\Programming\\.PROJECTS\\4Nyan\\backend\\bNyan\\static\\v\\split\\"
-    splitter = VideoSplitter("X:\\ffmpeg\\ffmpeg.exe", "X:\\ffmpeg\\ffprobe.exe")
-    splitter.split_video("D:\\Programming\\.PROJECTS\\4Nyan\\backend\\bNyan\\static\\v\\fall2.mp4", output, 10)
+#     output = "D:\\Programming\\.PROJECTS\\4Nyan\\backend\\bNyan\\static\\v\\split\\"
+#     splitter = VideoSplitter("X:\\ffmpeg\\ffmpeg.exe", "X:\\ffmpeg\\ffprobe.exe")
+#     splitter.split_video("D:\\Programming\\.PROJECTS\\4Nyan\\backend\\bNyan\\static\\v\\fall2.mp4", output, 10)
 
-    entries = PlaylistGenerator.generate_from_directory(output, 10)
+#     entries = PlaylistGenerator.generate_from_directory("http://192.168.1.149:721/static/v/split/", output, 10)
 
-    print(entries)
-    return 0
+#     print(entries)
+#     return 0
 
 # from flask import Flask
 

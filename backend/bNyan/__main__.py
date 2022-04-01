@@ -12,5 +12,6 @@ if __package__ is None and not hasattr(sys, "frozen"):
 if __name__ == "__main__":
     import bNyan
 
-    sys.exit(bNyan.m3u8_test())
+    sys.exit(bNyan.main())
+    # sys.exit(bNyan.m3u8_test())
 
