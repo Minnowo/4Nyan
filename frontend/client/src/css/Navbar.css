@@ -1,6 +1,9 @@
 
 
 
+.bg-dark {
+    background-color: #0D0D0D !important;
+}
 
 .nav-link {
     padding-left: 10px;
@@ -19,4 +22,9 @@
 
 .nav-item {
     display: block;
+}
+
+.navbar {
+    padding-top: 0px;
+    background-color: white;
 }

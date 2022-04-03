@@ -5,6 +5,22 @@
     padding-right: 0px;
   }
 
+.container-fluid {
+  background-color: #0D0D0D;
+}
+
+.before {
+  color: #999;
+}
+
+.pretty {
+  color: #fff;
+}
+
+.after {
+  color: #999;
+}
+
 @media (max-width: 978px) {
     .container-fluid {
       padding:0;
