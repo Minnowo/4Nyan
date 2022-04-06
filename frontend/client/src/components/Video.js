@@ -32,7 +32,6 @@ export default class Video extends Component {
       return;
     } 
 
-
     // If the browser supports MSE, use hls.js to play the video
     if (Hls.isSupported()) 
     {

@@ -31,7 +31,7 @@ export default class WatchPage extends Component
                     <div class="row">
                         <div class="col-lg-8 col-md-8 col-sm-fill">
 
-                            <Video {...vprops}>hello world</Video>
+                            <Video {...vprops}></Video>
                             
                             <div class="info-container">
                                
