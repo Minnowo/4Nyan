@@ -1,5 +1,6 @@
 *static/
 *postgres/
+
 # JetBrains PyCharm and WebStorm stuff
 frontend/.idea
 backend/.idea

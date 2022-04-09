@@ -42,3 +42,22 @@ API_406_EMPTY_CART_EXCEPTION = HTTPException(
 )
 
 
+API_404_USER_NOT_FOUND_EXCEPTION = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail="user does not exist"
+)
+
+API_409_USERNAME_CONFLICT_EXCEPTION = HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="username already exists"
+        )
+
+API_406_USERNAME_EXCEPTION = HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="username does not follow guidelines"
+        )
+
+API_406_PASSWORD_EXCEPTION = HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="password does not follow guidelines"
+        )

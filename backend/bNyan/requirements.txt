@@ -1,0 +1,7 @@
+# $ pip install -r requirements.txt
+
+uvicorn~=0.17.6
+fastapi~=0.75.0
+sqlalchemy~=1.4.32
+psycopg2~=2.9.3
+bcrypt~=3.2.0
