@@ -21,6 +21,12 @@ A LAN site meant to stream video, audio, text and images from a local server ove
 - Serving books as PDF or HTML
 - Audio *eventuall*
 
+## Frontend 
+The frontend is built using [Reactjs](https://reactjs.org/), with [Bootstrap](https://getbootstrap.com/docs/5.1/getting-started/download/) for css. 
+
+## Backend
+The backend is built using [FastAPI](https://fastapi.tiangolo.com/), using Python [3.7.6](https://www.python.org/downloads/release/python-376/) (I'm assuming anything 3.7+ will work just fine).
+
 ## Database
 I plan to make it easy to swap databases because I have yet to choose any specific one. I am using the [sqlalchemy](https://github.com/sqlalchemy/sqlalchemy) ORM to handle database connections and management, so hopefully it will be easy to design in a way that it is almost hot-swapable. I am currently using [Postgres](https://www.postgresql.org) but this may change to [SQLite](https://sqlite.org/index.html) or [MySQL](https://www.mysql.com/).
 
