@@ -6,9 +6,16 @@ A LAN site meant to stream video, audio, text and images from a local server ove
 
 *This is very early in development and currently vary unusable (unless you want to only stream video using mpv)*
 
+### Current Features
+
+- HLS (http live streaming) of video using m3u8 files
+- Image serving endpoint
+- Basic database layout
+- Very bare bones frontend used to test the HLS
+
 ### Plans for the future
 
-- Youtube-like UI for video streaming 
+- Youtube-like UI for video streaming
 - Danbooru-like gallery of randomly tagged images 
 - nHentai-like manga / book reader 
 - Serving books as PDF or HTML
