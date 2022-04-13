@@ -13,8 +13,16 @@ class TokenData(BaseModel):
     username: str = None
 
 
-
-
+class File(BaseModel):
+    hash_id   : int = None
+    hash      : bytes
+    size      : int
+    mime      : int
+    width     : int  
+    height    : int  
+    duration  : int  
+    num_words : int 
+    has_audio : bool
 
 ######## User ########
 

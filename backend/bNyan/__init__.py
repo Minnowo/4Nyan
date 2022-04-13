@@ -1,11 +1,17 @@
 
+from asyncio import constants
 import os 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-import exceptions
-import methods 
-import reg
+from . import exceptions
+from . import methods 
+from . import reg
+from . import models 
+from . import database 
+from . import constants
+
+import hashlib
 
 app = FastAPI()
 
@@ -28,9 +34,33 @@ app.add_middleware(
 )
 
 
-@app.get('/')
-async def get_item():
-    return "hello world"
+
+# DEBUG STUFF 
+@app.get('/get_file')
+async def getfile(request : Request, file_id : str = ""):
+
+    print(file_id)
+    return methods.static_lookup(file_id, request)
+
+
+# DEBUG STUFF 
+@app.get('/add_file')
+async def addfile(request : Request):
+    
+    f = "D://file.txt"
+    
+    file = models.File(
+                hash      = hashlib.sha256(f.encode()).digest(),
+                size      = os.stat(f).st_size,
+                mime      = constants.IMAGE_PNG,
+                width     = 0,
+                height    = 0,
+                duration  = 0,
+                num_words = 2,
+                has_audio = False
+            )
+
+    database.Methods.add_file(file)
 
 
 @app.get('/static/{category}/{path}')
@@ -52,6 +82,7 @@ async def staticv1(category: str, path: str, request : Request, ts : str = ""):
 def main():
     import uvicorn
 
+    database.Base.metadata.create_all()
     uvicorn.run(app, host="0.0.0.0", port=721)
 
     return 0

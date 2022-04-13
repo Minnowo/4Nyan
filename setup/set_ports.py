@@ -3,8 +3,9 @@
 
 # this is used to change the ports
 # this file modifies the other files and changes the port number to the vluae in config/ports.json
+# not the best idea, but it should work well enough if you do want to change them off the default.
 
-
+# also this doesn't change the firewall rule ports, so you're gonna have to change the firewall.bat files 
 
 if __name__ == "__main__":
 

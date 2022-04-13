@@ -42,3 +42,15 @@ def remove_directory(path : str) -> bool:
     except OSError:
         pass
     return not os.path.isdir(path)
+
+
+def parse_int(value : str, default = None):
+    """Convert 'value' to int"""
+
+    if not value:
+        return default
+    
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default

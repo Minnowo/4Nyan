@@ -19,3 +19,4 @@ DIGIT = compile(r"([0-9]+)")
 # searches for anything that is not a-z A-Z 0-9 -_!@#$%^&*()+=.,/\
 HAS_INVALID_PASSWORD_CHARACTERS = compile(r"[^a-zA-Z0-9\-\_\!\@\#\$\%\^\&\*\(\)\+\=\.\,\/\\)]")
 
+IS_HEXADECIMAL = compile(r"^(?:0[xX])?([a-fA-F0-9]+)$")

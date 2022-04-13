@@ -1,12 +1,16 @@
-import exceptions
-import constants 
 import os 
-import reg
-import status_codes
 
 from urllib.request import Request
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse
 from fastapi import Response
+
+from . import reg
+from . import status_codes
+from . import constants 
+from . import exceptions
+from . import util
+from . import database
+from .database.tables_postgres import *
 
 CHUNK_SIZE         = 1024 * 1024    # 1mb 
 BYTES_PER_RESPONSE = CHUNK_SIZE * 8 # ~8mb
@@ -105,6 +109,31 @@ def get_m3u8(file : str, request : Request):
     file = file_check(file, "static\\m3u8\\")
 
     return FileResponse(file, status_code=status_codes.RESPONSE)
+
+
+
+
+def static_lookup(file_id : str, request : Request):
+    
+    file_id = reg.IS_HEXADECIMAL.match(file_id)
+
+    if not file_id:
+        raise exceptions.API_404_NOT_FOUND_EXCEPTION
+
+    print(file_id)
+
+    id = util.parse_int(file_id.group(1), None)
+
+    if id is None:
+        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+
+    file = database.methods.get_file(id)
+    
+    hash_encoded = file.hash.hex()
+    
+    filename = hash_encoded + "." + constants.mime_ext_lookup.get(file.mime, "") # mime is actually just the file extension (for now 2022-04-12)
+    print(filename)
+    # return {"name" : filename }
 
 
 CATEGORY_MAP = {

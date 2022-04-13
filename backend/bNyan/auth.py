@@ -7,7 +7,6 @@ from constants import SALT_ROUNDS, SALT_PREFIX, PEPPER
 from . import database
 from . import models
 
-
 def verify_password(password : str, hashed_password : str, *, pepper : str = PEPPER) -> bool:
     """ validates if the given password is a match for the given hash, returns bool """
     if isinstance(password, str):
@@ -67,3 +66,15 @@ def authenticate_user(username : str, password : str) -> models.UserAuthIn:
         return None
 
     return user
+
+
+
+if __name__ == "__main__":
+
+    password = "hello world"
+    salt = get_salt()
+
+    hash = get_password_hash(password, salt)
+
+    print(password)
+    print(hash)
