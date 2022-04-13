@@ -1,12 +1,21 @@
 
 
+## 4Nyan
+A LAN site meant to stream video, audio, text and images from a local server over LAN.
 
 
+*This is very early in development and currently vary unusable (unless you want to only stream video using mpv)*
 
+### Plans for the future
 
+- Youtube-like UI for video streaming 
+- Danbooru-like gallery of randomly tagged images 
+- nHentai-like manga / book reader 
+- Serving books as PDF or HTML
+- Audio *eventuall*
 
-
-
+## Database
+I plan to make it easy to swap databases because I have yet to choose any specific one. I am using the [sqlalchemy](https://github.com/sqlalchemy/sqlalchemy) ORM to handle database connections and management, so hopefully it will be easy to design in a way that it is almost hot-swapable. I am currently using [Postgres](https://www.postgresql.org) but this may change to [SQLite](https://sqlite.org/index.html) or [MySQL](https://www.mysql.com/).
 
 ### Postgres Setup 
 
@@ -17,6 +26,8 @@ Then run pgadmin, and create a new server called **4Nyan-DB**. Set the hostname 
 After making the server in pgadmin, create a new database called **4Nyan-DB** (same as server name). Since i'm using windows, I had to set the encoding to WIN1252.
 
 After that the database is pretty much setup unless I forgot something.
+
+(I need to make the setup scripts handle making the server and stuff because PGAdmin is really really terrible and I hate using it)
 
 
 
