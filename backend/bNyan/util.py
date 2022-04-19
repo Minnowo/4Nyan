@@ -1,6 +1,6 @@
 import os 
-
-from reg import INVALID_PATH_CHAR, DIGIT
+import hashlib
+from .reg import INVALID_PATH_CHAR, DIGIT
 
 def natural_sort_key(s, _nsre=DIGIT):
     """    Provides a natural sort when used with sort(list, key=natural_sort_key) or sorted(list, key=natural_sort_key) """
@@ -45,7 +45,7 @@ def remove_directory(path : str) -> bool:
 
 
 def parse_int(value : str, default = None):
-    """Convert 'value' to int"""
+    """    Convert 'value' to int    """
 
     if not value:
         return default
@@ -54,3 +54,35 @@ def parse_int(value : str, default = None):
         return int(value)
     except (ValueError, TypeError):
         return default
+
+
+def iter_file(file, chunk_size : int = 262144): # 256kb 
+    """    takes a file handle and yields it in blocks    """
+
+    next_block = file.read(chunk_size)
+    
+    while len( next_block ) > 0:
+        
+        yield next_block
+        
+        next_block = file.read(chunk_size)
+        
+  
+def get_extra_file_hash(path : str) -> tuple:
+    """    returns a tuple of hashes as bytes in the order ( md5, sha1, sha512 )    """  
+    h_md5    = hashlib.md5()
+    h_sha1   = hashlib.sha1()
+    h_sha512 = hashlib.sha512()
+    
+    with open(path, 'rb') as file:
+        
+        for block in iter_file(file):
+            
+            h_md5.update( block )
+            h_sha1.update( block )
+            h_sha512.update( block )
+            
+    return ( h_md5.digest(), 
+             h_sha1.digest(), 
+             h_sha512.digest() )
+    

@@ -1,7 +1,8 @@
 import React, { Component } from 'react'
-import Video from './Video'
+import Video  from '../elements/Video'
+import Navbar from '../elements/Navbar';
 
-import "../css/video.css"
+import "../../css/video.css"
 
 export default class Default extends Component 
 {
@@ -15,10 +16,15 @@ export default class Default extends Component
       autoPlay : false
     };
 
+    let nprops = {
+      brand : "~4Nyan~"
+    };
+
     return (
       <div>
         <div>
-          <Video {...props}>hello world</Video>
+          <Navbar {...nprops}></Navbar>
+          <Video {...props}></Video>
         </div>
       </div>
     )

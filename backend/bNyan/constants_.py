@@ -36,6 +36,7 @@ PEPPER = "UEZ5V_HewsMowePwdLenthUWU__ooZqe"
 SALT_ROUNDS = 14
 SALT_PREFIX = b"2b" # needs to be 2b or 2a 
 
+SECRET = "9ffd8b7c514f2009eaf299f3df6dcc76a788c9518941db4dd077656b92996bf3"
 
 
 ######## Other ########

@@ -1,6 +1,7 @@
 
 const API_ENDPOINTS = {
     backend_ref : "http://192.168.1.149:721/",
+    login : "auth/token/",
     static : {
         video : "static/v/",
         image : "static/i/",

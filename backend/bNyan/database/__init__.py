@@ -1,12 +1,13 @@
 
 
-from .. import constants
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-Engine = create_engine(constants.DB_URL, echo=False)
+from ..constants_ import DB_URL
+
+Engine = create_engine(DB_URL, echo=False)
 
 Session = sessionmaker(Engine)
 

@@ -2,10 +2,17 @@
 import hashlib
 import bcrypt
 import base64
+import os 
 
-from constants import SALT_ROUNDS, SALT_PREFIX, PEPPER
+from fastapi_login import LoginManager
+
+
+from .constants_ import SALT_ROUNDS, SALT_PREFIX, PEPPER, SECRET
 from . import database
 from . import models
+
+manager = LoginManager(SECRET, token_url='/auth/token')
+
 
 def verify_password(password : str, hashed_password : str, *, pepper : str = PEPPER) -> bool:
     """ validates if the given password is a match for the given hash, returns bool """
@@ -54,10 +61,11 @@ def get_salt(*, rounds : int = SALT_ROUNDS, prefix : bytes = SALT_PREFIX) -> byt
     return bcrypt.gensalt(rounds, prefix)
 
 
+@manager.user_loader()
 def authenticate_user(username : str, password : str) -> models.UserAuthIn:
     """ authenticates if the given login is a valid user """
 
-    user = database.get_user(username)
+    user = database.Methods.get_user(username)
 
     if not user:
         return None

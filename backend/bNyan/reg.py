@@ -1,9 +1,9 @@
 from re import compile
-from constants import RESTRICT_MAP, RESTRICT_MAP_NO_SEP
+from . import constants_
 
 # matches any invalid path characters for the given system 
-INVALID_PATH_CHAR        = compile(f"[{RESTRICT_MAP['auto']}]")
-INVALID_PATH_WITHOUT_SEP = compile(f"[{RESTRICT_MAP_NO_SEP['auto']}]")
+INVALID_PATH_CHAR        = compile(f"[{constants_.RESTRICT_MAP['auto']}]")
+INVALID_PATH_WITHOUT_SEP = compile(f"[{constants_.RESTRICT_MAP_NO_SEP['auto']}]")
 
 # matches \..\ in path names 
 UP_DIRECTORY_LEVEL = compile(r"[/\\]?\.\.[/\\]")

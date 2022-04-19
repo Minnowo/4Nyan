@@ -38,3 +38,13 @@ class UserIn(User):
 
 class UserAuthIn(User):
     hashed_password: str
+
+
+class Login(BaseModel):
+    username : str 
+    password : str 
+
+
+class AccessToken(BaseModel):
+    token : bytes 
+    token_type : str 

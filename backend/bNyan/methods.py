@@ -6,11 +6,11 @@ from fastapi import Response
 
 from . import reg
 from . import status_codes
-from . import constants 
+from . import constants_
 from . import exceptions
 from . import util
 from . import database
-from .database.tables_postgres import *
+# from .database.tables_postgres import *
 
 CHUNK_SIZE         = 1024 * 1024    # 1mb 
 BYTES_PER_RESPONSE = CHUNK_SIZE * 8 # ~8mb
@@ -20,12 +20,12 @@ def file_check(path : str, rout : str, cleans=[reg.INVALID_PATH_CHAR.sub]):
     """ checks if the given file exists in the given rout and cleans the path with the list of given regex.sub """
     
     l = len(path)
-
+    
     # length check
-    if (l < constants.MIN_IMG_PATH_LENGTH):
+    if (l < constants_.MIN_IMG_PATH_LENGTH):
         raise exceptions.API_404_NOT_FOUND_EXCEPTION
 
-    if (l > constants.MAX_IMG_PATH_LENGTH):
+    if (l > constants_.MAX_IMG_PATH_LENGTH):
         raise exceptions.API_404_NOT_FOUND_EXCEPTION
 
     for i in cleans:
@@ -113,27 +113,28 @@ def get_m3u8(file : str, request : Request):
 
 
 
-def static_lookup(file_id : str, request : Request):
+def static_lookup(file_hash : str):
     
-    file_id = reg.IS_HEXADECIMAL.match(file_id)
+    # ensure only hexadeciaml is given 
+    file_hash = reg.IS_HEXADECIMAL.match(file_hash)
 
-    if not file_id:
+    if not file_hash:
         raise exceptions.API_404_NOT_FOUND_EXCEPTION
 
-    print(file_id)
+    # get the match 
+    hexadecimal = file_hash.group(1)
 
-    id = util.parse_int(file_id.group(1), None)
+    # convert into bytes 
+    digest = bytes.fromhex(hexadecimal)
 
-    if id is None:
-        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+    # look for the file record in the database 
+    file = database.methods.get_file_by_hash(digest)
 
-    file = database.methods.get_file(id)
-    
-    hash_encoded = file.hash.hex()
-    
-    filename = hash_encoded + "." + constants.mime_ext_lookup.get(file.mime, "") # mime is actually just the file extension (for now 2022-04-12)
-    print(filename)
-    # return {"name" : filename }
+    # return the file information 
+    file_info_json = file.dict()
+    file_info_json["filename"] = hexadecimal + constants_.mime_ext_lookup.get(file.mime, "")
+
+    return file_info_json
 
 
 CATEGORY_MAP = {

@@ -1,19 +1,23 @@
 
 from asyncio import constants
 import os 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordRequestForm 
 
 from . import exceptions
 from . import methods 
 from . import reg
 from . import models 
 from . import database 
-from . import constants
+from . import constants_
+from . import auth 
 
 import hashlib
 
 app = FastAPI()
+
+
 
 origins = [
     "http://localhost:722",
@@ -38,29 +42,58 @@ app.add_middleware(
 # DEBUG STUFF 
 @app.get('/get_file')
 async def getfile(request : Request, file_id : str = ""):
-
-    print(file_id)
-    return methods.static_lookup(file_id, request)
-
-
-# DEBUG STUFF 
-@app.get('/add_file')
-async def addfile(request : Request):
     
-    f = "D://file.txt"
-    
-    file = models.File(
-                hash      = hashlib.sha256(f.encode()).digest(),
-                size      = os.stat(f).st_size,
-                mime      = constants.IMAGE_PNG,
-                width     = 0,
-                height    = 0,
-                duration  = 0,
-                num_words = 2,
-                has_audio = False
-            )
+    if not file_id:
+        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
 
-    database.Methods.add_file(file)
+    print(hashlib.sha256(file_id.encode()).digest())
+    print(hashlib.sha256(file_id.encode()).digest().hex())
+    print(bytes.fromhex(hashlib.sha256(file_id.encode()).digest().hex()))
+
+    return methods.static_lookup(file_id)
+
+
+# # DEBUG STUFF 
+# @app.get('/add_file')
+# async def addfile(request : Request):
+    
+#     f = "D://file.txt"
+    
+#     file = models.File(
+#                 hash      = hashlib.sha256(f.encode()).digest(),
+#                 size      = os.stat(f).st_size,
+#                 mime      = constants.IMAGE_PNG,
+#                 width     = 0,
+#                 height    = 0,
+#                 duration  = 0,
+#                 num_words = 2,
+#                 has_audio = False
+#             )
+
+#     database.Methods.add_file(file)
+
+@app.post('/auth/token')
+def login(data: OAuth2PasswordRequestForm = Depends()):
+
+    username = data.username
+    password = data.password
+    
+    print(username)
+    print(password)
+
+    user = auth.authenticate_user(username, password)
+
+    if not user:
+        raise exceptions.API_401_CREDENTIALS_EXCEPTION
+    
+    access_token = auth.manager.create_access_token(
+        data = {
+            "username" : username,
+            "user_id"  : user.user_id
+        }
+    )
+
+    return {'access_token': access_token, 'token_type': 'bearer'}
 
 
 @app.get('/static/{category}/{path}')
@@ -100,15 +133,3 @@ def m3u8_test():
 
     print(entries)
     return 0
-
-# from flask import Flask
-
-# app = Flask(__name__)
-
-# @app.route("/")
-# def hello_world():
-#     return "<p>Hello, World!</p>"
-
-
-# if __name__ == "__main__":
-#     app.run(host="0.0.0.0", port=8000)

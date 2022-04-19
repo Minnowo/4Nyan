@@ -1,14 +1,14 @@
 
 
 
-import sqlalchemy
 from . import Session
 from .tables_postgres import *
 
 from .. import models
-from .. import constants
+
 from .. import exceptions
-from ..import auth
+from .. import auth
+from .. import constants_
 from ..reg import HAS_INVALID_PASSWORD_CHARACTERS
 
 from datetime import datetime 
@@ -23,12 +23,12 @@ def create_user(user : models.UserIn) -> dict:
     username_length = len(user.username)
     password_length = len(user.password)
 
-    if username_length < constants.MIN_USERNAME_LEGNTH or \
-       username_length > constants.MAX_USERNAME_LENGTH:
+    if username_length < constants_.MIN_USERNAME_LEGNTH or \
+       username_length > constants_.MAX_USERNAME_LENGTH:
         raise exceptions.API_406_USERNAME_EXCEPTION
 
-    if password_length < constants.MIN_PASSWORD_LENGTH or \
-       password_length > constants.MAX_PASSWORD_LENGTH or \
+    if password_length < constants_.MIN_PASSWORD_LENGTH or \
+       password_length > constants_.MAX_PASSWORD_LENGTH or \
        HAS_INVALID_PASSWORD_CHARACTERS.search(user.password):
         raise exceptions.API_406_PASSWORD_EXCEPTION
     
@@ -82,7 +82,28 @@ def get_user(username : str) -> models.UserAuthIn:
             )
 
 
-def get_file(hash_id : int) -> models.File:
+def get_file_by_hash(hash : bytes) ->models.File:
+
+    with Session.begin() as session:
+
+        result = session.query(TBL_Hash).filter_by(hash = hash).first()
+
+        if not result:
+            return None 
+
+        return models.File(
+                hash_id   = result.hash_id,
+                hash      = result.hash,
+                size      = result.size,
+                mime      = result.mime,
+                width     = result.width,
+                height    = result.height,
+                duration  = result.duration,
+                num_words = result.num_words,
+                has_audio = result.has_audio
+            )
+
+def get_file_by_id(hash_id : int) -> models.File:
 
     with Session.begin() as session:
 
