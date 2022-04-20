@@ -16,7 +16,7 @@ export default class LoginPage extends Component
 
     handleInputChange = (e) => 
     {
-        // is this really how you're supposed to do this???
+        // is this really how you're supposed to do this??? 
         switch(e.target.id)
         {
           case "login-username":

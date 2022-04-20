@@ -53,33 +53,11 @@ async def getfile(request : Request, file_id : str = ""):
     return methods.static_lookup(file_id)
 
 
-# # DEBUG STUFF 
-# @app.get('/add_file')
-# async def addfile(request : Request):
-    
-#     f = "D://file.txt"
-    
-#     file = models.File(
-#                 hash      = hashlib.sha256(f.encode()).digest(),
-#                 size      = os.stat(f).st_size,
-#                 mime      = constants.IMAGE_PNG,
-#                 width     = 0,
-#                 height    = 0,
-#                 duration  = 0,
-#                 num_words = 2,
-#                 has_audio = False
-#             )
-
-#     database.Methods.add_file(file)
-
 @app.post('/auth/token')
 def login(data: OAuth2PasswordRequestForm = Depends()):
 
     username = data.username
     password = data.password
-    
-    print(username)
-    print(password)
 
     user = auth.authenticate_user(username, password)
 

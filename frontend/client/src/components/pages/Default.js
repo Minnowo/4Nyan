@@ -24,7 +24,7 @@ export default class Default extends Component
       <div>
         <div>
           <Navbar {...nprops}></Navbar>
-          <Video {...props}></Video>
+          {/* <Video {...props}></Video> */}
         </div>
       </div>
     )
