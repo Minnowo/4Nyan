@@ -1,10 +1,10 @@
 
 
 ## 4Nyan
-A LAN site meant to stream video, audio, text and images from a local server over LAN.
+A LAN site meant to stream video, audio, text, and images from a local server over LAN.
 
 
-*This is very early in development and currently vary unusable (unless you want to only stream video using mpv)*
+*This is very early in development and currently very unusable (unless you want to only stream video using mpv)*
 
 ### Current Features
 
@@ -19,7 +19,7 @@ A LAN site meant to stream video, audio, text and images from a local server ove
 - Danbooru-like gallery of randomly tagged images 
 - nHentai-like manga / book reader 
 - Serving books as PDF or HTML
-- Audio *eventuall*
+- Audio *eventually*
 
 ## Frontend 
 The frontend is built using [Reactjs](https://reactjs.org/), with [Bootstrap](https://getbootstrap.com/docs/5.1/getting-started/download/) for css. 

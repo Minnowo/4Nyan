@@ -52,9 +52,26 @@ async def getfile(request : Request, file_id : str = ""):
 
     return methods.static_lookup(file_id)
 
+@app.post('/create/user')
+def register_user(request : Request, data: OAuth2PasswordRequestForm = Depends()):
+    print("uwu")
+    _ = database.methods.create_user(data)
+    print(_)
+    return _ 
+
+    username = data.username
+    password = data.password
+
+    print(username)
+    print(password)
+
+    return {
+        "username" : username,
+        "password" : password
+    }
 
 @app.post('/auth/token')
-def login(data: OAuth2PasswordRequestForm = Depends()):
+def login(request : Request, data: OAuth2PasswordRequestForm = Depends()):
 
     username = data.username
     password = data.password

@@ -15,7 +15,7 @@ import {
     MIN_PASSWORD_LENGTH
         } from '../../constant'
 
-export default class LoginPage extends Component 
+export default class SIgnupPage extends Component 
 {
     state = {
         username : "",
@@ -27,17 +27,17 @@ export default class LoginPage extends Component
         // is this really how you're supposed to do this??? 
         switch(e.target.id)
         {
-          case "login-username":
+          case "signup-username":
             this.setState({username : e.target.value});
             break;
     
-          case "login-password":
+          case "signup-password":
             this.setState({password : e.target.value});
             break;
         }
       }
 
-    loginUser = async (e) => 
+    registerUser = async (e) => 
     {
         // prevents the form from submitting 
         e.preventDefault();
@@ -49,7 +49,7 @@ export default class LoginPage extends Component
         
         // create a new http POST request 
         let request = new XMLHttpRequest();
-        request.open('POST', API_ENDPOINTS.backend_ref + API_ENDPOINTS.login, true);
+        request.open('POST', API_ENDPOINTS.backend_ref + API_ENDPOINTS.register, true);
         
         // send the data
         request.send(data);
@@ -60,6 +60,14 @@ export default class LoginPage extends Component
             let response = JSON.parse(request.response);
 
             console.log(response);
+
+            if(request.status != 200)
+                return;
+
+            if (!response.user_id)
+                return;
+                
+            console.log("user created");
         };
     }
 
@@ -79,7 +87,7 @@ export default class LoginPage extends Component
 
                             <div className='row'>
                                 <input type="text"     
-                                    id="login-username" 
+                                    id="signup-username" 
                                     placeholder="username"
                                     required=""
                                     maxLength={MAX_USERNAME_LENGTH}
@@ -89,7 +97,7 @@ export default class LoginPage extends Component
 
                             <div className='row'>
                                 <input type="password" 
-                                    id="login-password" 
+                                    id="signup-password" 
                                     placeholder="password"
                                     required=""
                                     maxLength={MAX_PASSWORD_LENGTH}
@@ -99,12 +107,12 @@ export default class LoginPage extends Component
 
                             <div className='row'>
                                 <button id="register-button"
-                                    onClick={this.loginUser}><strong>Register</strong></button>
+                                    onClick={this.registerUser}><strong>Register</strong></button>
                             </div>
 
                             <div>
-                                Don't have an account?
-                                <a href="register" className='link-bold'> Register</a>
+                                Already have an account?
+                                <a href="login" className='link-bold'> Login</a>
                             </div>
                         </form>
 

@@ -1,5 +1,4 @@
 import React, { Component } from 'react'
-import Video  from '../elements/Video'
 import Navbar from '../elements/Navbar';
 
 import "../../css/video.css"

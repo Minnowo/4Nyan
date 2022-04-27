@@ -27,7 +27,7 @@ DB_URL = "postgresql://{}:{}@localhost:{}/{}".format(DB_USER, DB_KEY, DB_PORT, D
 ######## Passwords / User ########
 
 MAX_USERNAME_LENGTH = 32 
-MIN_USERNAME_LEGNTH = 3
+MIN_USERNAME_LEGNTH = 4
 
 MAX_PASSWORD_LENGTH = 96
 MIN_PASSWORD_LENGTH = 10

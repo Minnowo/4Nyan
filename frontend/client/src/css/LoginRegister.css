@@ -1,0 +1,53 @@
+
+
+
+
+.content 
+{
+    box-sizing: inherit;
+    display: table;
+    height:80%;
+
+    margin-left: auto;
+    margin-right: auto;
+
+    text-align: center;
+}
+
+form
+{   
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.row {
+    position: relative;
+    height: 50px;
+}
+
+input, .row {
+    min-width: 300px;
+}
+
+
+#register-button {
+    color: white;
+    background-color: #ED2553;
+}
+#register-button:hover {
+    color: white;
+    background-color: #EF3862;
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+

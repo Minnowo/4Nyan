@@ -5,6 +5,7 @@ import Default from './components/pages/Default';
 
 import WatchPage from './components/pages/WatchPage';
 import LoginPage from './components/pages/LoginPage';
+import SIgnupPage from './components/pages/SignupPage';
 
 class App extends Component 
 {
@@ -19,6 +20,7 @@ class App extends Component
         <Route path="/home" element={<Default />}></Route>
         <Route path="/watch" element={<WatchPage />}></Route>
         <Route path="/login" element={<LoginPage />}></Route>
+        <Route path="/register" element={<SIgnupPage />}></Route>
         </Routes>
       </Router>
     );

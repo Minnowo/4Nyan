@@ -9,7 +9,7 @@ from .. import models
 from .. import exceptions
 from .. import auth
 from .. import constants_
-from ..reg import HAS_INVALID_PASSWORD_CHARACTERS
+from ..reg import HAS_INVALID_PASSWORD_CHARACTERS, HAS_INVALID_USERNAME_CHARACTERS
 
 from datetime import datetime 
 
@@ -24,7 +24,8 @@ def create_user(user : models.UserIn) -> dict:
     password_length = len(user.password)
 
     if username_length < constants_.MIN_USERNAME_LEGNTH or \
-       username_length > constants_.MAX_USERNAME_LENGTH:
+       username_length > constants_.MAX_USERNAME_LENGTH or \
+       HAS_INVALID_USERNAME_CHARACTERS.search(user.username):
         raise exceptions.API_406_USERNAME_EXCEPTION
 
     if password_length < constants_.MIN_PASSWORD_LENGTH or \

@@ -7,6 +7,16 @@
         url('fonts/Consolas.svg') format('svg');
 }
 
+body, #root, .apply-font
+{
+    background-color: #1F1F1F;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+  }
+
 .apply-font {
     font-family: "Consolas" !important;
     font-size: 16px;
@@ -105,3 +115,27 @@ a:hover {
     text-decoration: none;
 }
 
+.link-bold {
+    color: #FFF;
+    font-weight: bold;
+}
+
+
+input {
+    background:#4D4D4D;
+    color: #d9d9d9;
+
+    border: none;
+    outline: none;
+}
+
+input:hover {
+    background-color: #666666;
+}
+
+
+button {
+    border-radius: 5px;
+    border: none;
+    outline: none;
+}

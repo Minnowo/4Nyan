@@ -6,7 +6,8 @@ import "../../css/Navbar.css"
 export default class Navbar extends Component 
 {
     state = {
-        brand : this.props.brand
+        brand : this.props.brand,
+        displayUser : this.props.displayUser
     }
 
     render() 
@@ -26,7 +27,7 @@ export default class Navbar extends Component
                     
                     <ul className="navbar-nav float-right">
                         <li className='nav-item'><a className='nav-link' href='login'>Login</a></li>
-                        <li className='nav-item'><a className='nav-link' href='RegisterPage'>Register</a></li>
+                        <li className='nav-item'><a className='nav-link' href='register'>Register</a></li>
                     </ul>
                 </div>
             </nav>
