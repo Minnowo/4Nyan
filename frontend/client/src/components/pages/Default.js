@@ -1,31 +1,30 @@
-import React, { Component } from 'react'
-import Navbar from '../elements/Navbar';
-
+import React from 'react'
+import Nav from "../elements/Navbar";
 import "../../css/video.css"
 
-export default class Default extends Component 
-{
-  render() 
-  {
 
-    let props = {
-      //  http://192.168.1.149:721/static/m3u8/RnM_S4E1.m3u8
-      //  http://192.168.1.149:721/static/m3u8/fallen_kingdom.m3u8
-      m3u8 : "http://192.168.1.149:721/static/m3u8/RnM_S4E1.m3u8",
-      autoPlay : false
+export default function Default(props)
+{
+    const { cookies } = props;
+
+    let vprops = {
+        m3u8 : "http://192.168.1.149:721/static/m3u8/RnM_S4E1.m3u8",
+        autoPlay : false
     };
 
     let nprops = {
-      brand : "~4Nyan~"
+        brand : "~4Nyan~",
+        displayUser : cookies.get("username")
     };
+
+    console.log(cookies.get("user"));
 
     return (
       <div>
         <div>
-          <Navbar {...nprops}></Navbar>
+          <Nav {...nprops}></Nav>
           {/* <Video {...props}></Video> */}
         </div>
       </div>
     )
-  }
 }

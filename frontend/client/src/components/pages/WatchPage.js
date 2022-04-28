@@ -1,4 +1,5 @@
-import React, { Component } from 'react'
+import React from 'react'
+
 import Video  from '../elements/Video'
 import Navbar from '../elements/Navbar'
 
@@ -7,20 +8,20 @@ import "../../css/video.css"
 import "../../css/WatchPage.css"
 import "../../css/global.css"
 
-export default class WatchPage extends Component 
+export default function WatchPage(props)
 {
-  render() 
-  {
+    const { cookies } = props;
 
-    let vprops = {
-      //  http://192.168.1.149:721/static/m3u8/RnM_S4E1.m3u8
-      //  http://192.168.1.149:721/static/m3u8/fallen_kingdom.m3u8
-      m3u8 : "http://192.168.1.149:721/static/m3u8/fallen_kingdom.m3u8",
-      autoPlay : false
+    const vprops = {
+        //  http://192.168.1.149:721/static/m3u8/RnM_S4E1.m3u8
+        //  http://192.168.1.149:721/static/m3u8/fallen_kingdom.m3u8
+        m3u8 : "http://192.168.1.149:721/static/m3u8/fallen_kingdom.m3u8",
+        autoPlay : false
     };
 
-    let nprops = {
-        brand : "~4Nyan~"
+    const nprops = {
+        brand : "~4Nyan~",
+        displayUser : cookies.get("username")
     }
 
     return (
@@ -34,7 +35,7 @@ export default class WatchPage extends Component
                             <Video {...vprops}></Video>
                             
                             <div className="info-container">
-                               
+                            
                                 <h2 className="title">
                                     <span className="before">[EXPLICIT] </span>
                                     <span className="pretty">Fallen Kingdom Minecraft Perody</span>
@@ -47,18 +48,18 @@ export default class WatchPage extends Component
                                 
                                 <section id="tags">
                                     <div className="tag-container field-name hidden">
-								        Parodies:
-								        <span className="tags"></span>
+                                        Parodies:
+                                        <span className="tags"></span>
                                     </div>
                                     
                                     <div className="tag-container field-name hidden">
-								        Characters:
-								        <span className="tags"></span>
+                                        Characters:
+                                        <span className="tags"></span>
                                     </div>
                                     
                                     <div className="tag-container field-name ">
-								        Tags:
-								        <span className="tags">
+                                        Tags:
+                                        <span className="tags">
                                             <a href="/tag/big-breasts/" className="tag tag-2937 ">
                                                 <span className="name">big breasts</span>
                                                 <span className="count">131K</span>
@@ -145,12 +146,12 @@ export default class WatchPage extends Component
                                     <div className="tag-container field-name">
                                         Uploaded:
                                         <span className="tags">
-                                            <time className="nobold" datetime="2022-04-03T17:06:55.992013+00:00" title="4/3/2022, 5:06:55 PM">2 hours, 2 minutes ago</time>
+                                            <time className="nobold" dateTime="2022-04-03T17:06:55.992013+00:00" title="4/3/2022, 5:06:55 PM">2 hours, 2 minutes ago</time>
                                         </span>
                                     </div>
                                     
                                 </section>
-                                 
+                                
                             </div>
                         
                         </div>
@@ -163,5 +164,4 @@ export default class WatchPage extends Component
             </div>
         </div>
     )
-  }
 }

@@ -1,29 +1,29 @@
 import React, { Component } from 'react';
 import {BrowserRouter as Router,Routes,Route} from "react-router-dom";
+import Cookies from 'universal-cookie';
 
 import Default from './components/pages/Default';
 
 import WatchPage from './components/pages/WatchPage';
 import LoginPage from './components/pages/LoginPage';
-import SIgnupPage from './components/pages/SignupPage';
+import RegisterPage from './components/pages/SignupPage';
 
-class App extends Component 
+
+export default function App()
 {
-  state = {};
-
-  render() 
-  {
+    const [state, setState] = React.useState({ 
+      cookies : new Cookies()
+    });
+    
     return (
       <Router>
         <Routes>
-        <Route path="/" element={<Default />}></Route>
-        <Route path="/home" element={<Default />}></Route>
-        <Route path="/watch" element={<WatchPage />}></Route>
-        <Route path="/login" element={<LoginPage />}></Route>
-        <Route path="/register" element={<SIgnupPage />}></Route>
+        <Route path="/" element={<Default {...state} />}></Route>
+        <Route path="/home" element={<Default {...state}/>}></Route>
+        <Route path="/watch" element={<WatchPage {...state}/>}></Route>
+        <Route path="/login" element={<LoginPage {...state}/>}></Route>
+        <Route path="/register" element={<RegisterPage {...state}/>}></Route>
         </Routes>
       </Router>
     );
-  }
 }
-export default App;

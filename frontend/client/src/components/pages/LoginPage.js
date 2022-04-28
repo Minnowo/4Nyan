@@ -1,7 +1,6 @@
-import React, { Component } from 'react'
+import React from 'react'
 
 import Navbar from '../elements/Navbar'
-
 import "../../css/LoginRegister.css"
 
 import "../../css/bootstrap.min.css"
@@ -15,37 +14,35 @@ import {
     MIN_PASSWORD_LENGTH
         } from '../../constant'
 
-export default class LoginPage extends Component 
+
+export default function LoginPage(props)
 {
-    state = {
-        username : "",
-        password : ""
-    };
+    let { cookies } = props;
 
-    handleInputChange = (e) => 
+    if(cookies.get("access_token"))
     {
-        // is this really how you're supposed to do this??? 
-        switch(e.target.id)
-        {
-          case "login-username":
-            this.setState({username : e.target.value});
-            break;
-    
-          case "login-password":
-            this.setState({password : e.target.value});
-            break;
-        }
-      }
+        window.location.href = "/";
+        return null;
+    }
 
-    loginUser = async (e) => 
+    const username = React.useRef("");
+    const password = React.useRef("");
+    
+    const nprops = {
+        brand : "~4Nyan~",
+        displayUser : cookies.get("username")
+    }
+
+
+    async function loginUser(e)
     {
         // prevents the form from submitting 
         e.preventDefault();
 
         // make form data
         let data = new FormData();
-        data.append("username", this.state.username);
-        data.append("password", this.state.password);
+        data.append("username", username.current.value);
+        data.append("password", password.current.value);
         
         // create a new http POST request 
         let request = new XMLHttpRequest();
@@ -60,56 +57,64 @@ export default class LoginPage extends Component
             let response = JSON.parse(request.response);
 
             console.log(response);
+
+            if (request.status != 200)
+                return; 
+
+            if (!response.access_token)
+                return;
+            
+            cookies.set("user", {
+                username : response.username,
+                user_id  : response.user_id
+            });
+            cookies.set("access_token", response.access_token);
+            cookies.set("token_type", response.token_type);
+            window.location.href = "/login";
         };
     }
 
-    render() 
-    {
-        let nprops = {
-                brand : "~4Nyan~"
-            }
+        
+    return (
+        <div className="apply-font" style={{color: "#fff"}}>
+            <Navbar {...nprops}></Navbar>
 
-        return (
-            <div className="apply-font" style={{color: "#fff"}}>
-                <Navbar {...nprops}></Navbar>
+            <div className="content">
 
-                    <div className="content">
+                <form>
 
-                        <form>
+                    <div className='row'>
+                        <input type="text"     
+                            id="login-username" 
+                            placeholder="username"
+                            required=""
+                            maxLength={MAX_USERNAME_LENGTH}
+                            minLength={MIN_USERNAME_LENGTH}
+                            ref={username}></input>
+                    </div>
 
-                            <div className='row'>
-                                <input type="text"     
-                                    id="login-username" 
-                                    placeholder="username"
-                                    required=""
-                                    maxLength={MAX_USERNAME_LENGTH}
-                                    minLength={MIN_USERNAME_LENGTH}
-                                    onChange={this.handleInputChange}></input>
-                            </div>
+                    <div className='row'>
+                        <input type="password" 
+                            id="login-password" 
+                            placeholder="password"
+                            required=""
+                            maxLength={MAX_PASSWORD_LENGTH}
+                            minLength={MIN_PASSWORD_LENGTH}
+                            ref={password}></input>
+                    </div>
 
-                            <div className='row'>
-                                <input type="password" 
-                                    id="login-password" 
-                                    placeholder="password"
-                                    required=""
-                                    maxLength={MAX_PASSWORD_LENGTH}
-                                    minLength={MIN_PASSWORD_LENGTH}
-                                    onChange={this.handleInputChange}></input>
-                            </div>
+                    <div className='row'>
+                        <button id="pink-button"
+                                onClick={loginUser}><strong>Login</strong></button>
+                    </div>
 
-                            <div className='row'>
-                                <button id="register-button"
-                                    onClick={this.loginUser}><strong>Register</strong></button>
-                            </div>
+                    <div>
+                        Don't have an account?
+                        <a href="register" className='link-bold'> Register</a>
+                    </div>
+                </form>
 
-                            <div>
-                                Don't have an account?
-                                <a href="register" className='link-bold'> Register</a>
-                            </div>
-                        </form>
-
-                </div>
             </div>
-        )
-    }
+        </div>
+    )
 }

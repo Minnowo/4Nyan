@@ -52,23 +52,12 @@ async def getfile(request : Request, file_id : str = ""):
 
     return methods.static_lookup(file_id)
 
+
 @app.post('/create/user')
 def register_user(request : Request, data: OAuth2PasswordRequestForm = Depends()):
-    print("uwu")
-    _ = database.methods.create_user(data)
-    print(_)
-    return _ 
+    
+    return database.methods.create_user(data)
 
-    username = data.username
-    password = data.password
-
-    print(username)
-    print(password)
-
-    return {
-        "username" : username,
-        "password" : password
-    }
 
 @app.post('/auth/token')
 def login(request : Request, data: OAuth2PasswordRequestForm = Depends()):
@@ -80,7 +69,7 @@ def login(request : Request, data: OAuth2PasswordRequestForm = Depends()):
 
     if not user:
         raise exceptions.API_401_CREDENTIALS_EXCEPTION
-    
+
     access_token = auth.manager.create_access_token(
         data = {
             "username" : username,
@@ -88,7 +77,12 @@ def login(request : Request, data: OAuth2PasswordRequestForm = Depends()):
         }
     )
 
-    return {'access_token': access_token, 'token_type': 'bearer'}
+    return {
+        'access_token': access_token, 
+        'token_type': 'bearer',
+        'username'  : username,
+        'user_id'   : user.user_id
+    }
 
 
 @app.get('/static/{category}/{path}')

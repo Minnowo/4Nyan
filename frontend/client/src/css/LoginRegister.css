@@ -30,11 +30,11 @@ input, .row {
 }
 
 
-#register-button {
+#pink-button {
     color: white;
     background-color: #ED2553;
 }
-#register-button:hover {
+#pink-button:hover {
     color: white;
     background-color: #EF3862;
     

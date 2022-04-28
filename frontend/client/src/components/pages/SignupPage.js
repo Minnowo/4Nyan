@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React from 'react'
 
 import Navbar from '../elements/Navbar'
 
@@ -15,37 +15,28 @@ import {
     MIN_PASSWORD_LENGTH
         } from '../../constant'
 
-export default class SIgnupPage extends Component 
+
+export default function RegisterPage(props)
 {
-    state = {
-        username : "",
-        password : ""
-    };
+    const { cookies } = props;
 
-    handleInputChange = (e) => 
-    {
-        // is this really how you're supposed to do this??? 
-        switch(e.target.id)
-        {
-          case "signup-username":
-            this.setState({username : e.target.value});
-            break;
+    const username = React.useRef("");
+    const password = React.useRef("");
     
-          case "signup-password":
-            this.setState({password : e.target.value});
-            break;
-        }
-      }
+    const nprops = {
+        brand : "~4Nyan~",
+        displayUser : cookies.get("username")
+    }
 
-    registerUser = async (e) => 
+    async function registerUser(e)
     {
         // prevents the form from submitting 
         e.preventDefault();
 
         // make form data
         let data = new FormData();
-        data.append("username", this.state.username);
-        data.append("password", this.state.password);
+        data.append("username", username.current.value);
+        data.append("password", password.current.value);
         
         // create a new http POST request 
         let request = new XMLHttpRequest();
@@ -66,58 +57,52 @@ export default class SIgnupPage extends Component
 
             if (!response.user_id)
                 return;
-                
+
             console.log("user created");
         };
     }
 
-    render() 
-    {
-        let nprops = {
-                brand : "~4Nyan~"
-            }
 
-        return (
-            <div className="apply-font" style={{color: "#fff"}}>
-                <Navbar {...nprops}></Navbar>
+    return (
+        <div className="apply-font" style={{color: "#fff"}}>
+            <Navbar {...nprops}></Navbar>
 
-                    <div className="content">
+                <div className="content">
 
-                        <form>
+                    <form>
 
-                            <div className='row'>
-                                <input type="text"     
-                                    id="signup-username" 
-                                    placeholder="username"
-                                    required=""
-                                    maxLength={MAX_USERNAME_LENGTH}
-                                    minLength={MIN_USERNAME_LENGTH}
-                                    onChange={this.handleInputChange}></input>
-                            </div>
+                        <div className='row'>
+                            <input type="text"     
+                                id="signup-username" 
+                                placeholder="username"
+                                required=""
+                                maxLength={MAX_USERNAME_LENGTH}
+                                minLength={MIN_USERNAME_LENGTH}
+                                ref={username}></input>
+                        </div>
 
-                            <div className='row'>
-                                <input type="password" 
-                                    id="signup-password" 
-                                    placeholder="password"
-                                    required=""
-                                    maxLength={MAX_PASSWORD_LENGTH}
-                                    minLength={MIN_PASSWORD_LENGTH}
-                                    onChange={this.handleInputChange}></input>
-                            </div>
+                        <div className='row'>
+                            <input type="password" 
+                                id="signup-password" 
+                                placeholder="password"
+                                required=""
+                                maxLength={MAX_PASSWORD_LENGTH}
+                                minLength={MIN_PASSWORD_LENGTH}
+                                ref={password}></input>
+                        </div>
 
-                            <div className='row'>
-                                <button id="register-button"
-                                    onClick={this.registerUser}><strong>Register</strong></button>
-                            </div>
+                        <div className='row'>
+                            <button id="pink-button"
+                                onClick={registerUser}><strong>Register</strong></button>
+                        </div>
 
-                            <div>
-                                Already have an account?
-                                <a href="login" className='link-bold'> Login</a>
-                            </div>
-                        </form>
+                        <div>
+                            Already have an account?
+                            <a href="login" className='link-bold'> Login</a>
+                        </div>
+                    </form>
 
-                </div>
             </div>
-        )
-    }
+        </div>
+    )
 }
