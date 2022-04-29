@@ -81,7 +81,7 @@ export default function LoginPage(props)
 
             <div className="content">
 
-                <form>
+                <form className='align-center'>
 
                     <div className='row'>
                         <input type="text"     

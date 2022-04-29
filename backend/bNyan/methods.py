@@ -65,9 +65,8 @@ async def get_valid_file_header(data : UploadFile, data_length : int):
 
 
 def get_static_path_from_mime(mime : int):
-
+    """ returns the static path where a file should be stored based of the given mime type """
     if mime in constants_.mime_types.IMAGE_MIMES:
-        print("image mime path")
         return constants_.STATIC_IMAGE_PATH
 
     if mime in constants_.mime_types.VIDEO_MIMES:
@@ -176,33 +175,40 @@ def static_lookup(file_hash : str):
 
 async def process_file_upload(file : UploadFile, data_length : int):
 
+    # check for valid header, get the valid header, and get the read bytes
     valid, header, read_bytes = await get_valid_file_header(file, data_length)
 
     if not valid:
         raise exceptions.API_400_BAD_FILE_EXCEPTION
 
+    # get a temp file 
     tempname = util.get_temp_file_in_path(constants_.STATIC_TEMP_PATH)
 
+    # make use of the valid header, get the mime type and file extension
     mime     = constants_.header_mime_lookup.get(header)
     file_ext = constants_.mime_ext_lookup.get(mime)
 
+    # begin our sha256 hash, this will be made as we download the file
     h_sha256 = hashlib.sha256()
     h_sha256.update(read_bytes)
 
     with open(tempname, "wb") as writer:
-
+        
+        # make sure to write the bytes read getting the header
         writer.write(read_bytes)
 
+        # download the file in chunks 
         async for chunk in util.iter_file_async(file):
 
             h_sha256.update(chunk)
 
             writer.write(chunk)
 
-
+    # get our sha256 hash
     sha256 = h_sha256.digest()
     file_size = os.path.getsize(tempname)
 
+    # generate a file model to add the file into the database 
     db_file = models.File(
         hash=sha256, 
         size=file_size, 
@@ -217,11 +223,13 @@ async def process_file_upload(file : UploadFile, data_length : int):
         # will throw an exception if the file is in the database 
         database.Methods.add_file(db_file)
     except HTTPException as e:
-        util.remove_file(tempname)
+        util.remove_file(tempname) # delete the temp file 
         raise e 
 
+    # get the new filename 
     filename = os.path.join(get_static_path_from_mime(mime), sha256.hex() + file_ext)
 
+    # rename the file
     if not util.rename_file(tempname, filename):
         print("=" * 64)
         print("   SHA256:", sha256)

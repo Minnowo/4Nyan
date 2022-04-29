@@ -14,7 +14,7 @@
     text-align: center;
 }
 
-form
+.align-center
 {   
     display: table-cell;
     vertical-align: middle;

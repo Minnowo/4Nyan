@@ -69,7 +69,7 @@ export default function RegisterPage(props)
 
                 <div className="content">
 
-                    <form>
+                    <form className='align-center'>
 
                         <div className='row'>
                             <input type="text"     

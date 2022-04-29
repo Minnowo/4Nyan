@@ -1,9 +1,9 @@
 import React from 'react'
 import Navbar from "../elements/Navbar";
-
+import FileUpload from '../elements/FileUpload';
 
 import "../../css/LoginRegister.css"
-
+import "../../css/UploadPage.css"
 import "../../css/bootstrap.min.css"
 import "../../css/global.css"
 
@@ -15,6 +15,8 @@ export default function UploadPage(props)
 
     const [files       , setFiles  ] = React.useState([]);
     const [filePreviews, setPreview] = React.useState([]);
+    const [messageBox  , setMessage] = React.useState([]);
+    const [uploadProgress, setProgress] = React.useState("");
 
     const fileUpload = React.useRef("");
 
@@ -44,34 +46,44 @@ export default function UploadPage(props)
         if(!files || files.length < 1)
             return;
 
-        const toUpload = files[0];
-        
-        const data = new FormData();
-
-        // Update the formData object
-        data.append("data", toUpload, toUpload.name);
-        
-        let request = new XMLHttpRequest();
-        request.open('POST', API_ENDPOINTS.backend_ref + API_ENDPOINTS.upload_file, true);
-        
-        // send the data
-        request.send(data);
-
-        // on request goes through, handle the resposne
-        request.onload = function () 
+        let message = []
+        for(let f of files)
         {
-            let response = JSON.parse(request.response);
+            const totalSize = f.size;
+            const data = new FormData();
 
-            console.log(response);
+            // Update the formData object
+            data.append("data", f, f.name);
+            
+            let request = new XMLHttpRequest();
+            
+            // upload progress for current file
+            request.upload.onprogress = (event) => 
+            {
+                setProgress(`'${f.name}: uploaded ${event.loaded} / ${totalSize} bytes`)
+            }
+            
+            // on request goes through, handle the response
+            request.onload = function () 
+            {
+                if(request.status == 200)
+                {
+                    message.push(<div style={{color:"green"}}>'{f.name}': upload status: {request.status.toString()}</div>);
+                }
+                else 
+                {
+                    message.push(<div style={{color:"red"}}>'{f.name}': upload status: {request.status.toString()}</div>);
+                }
+            };
 
-            if(request.status != 200)
-                return;
+            request.open('POST', API_ENDPOINTS.backend_ref + API_ENDPOINTS.upload_file, true);
 
-            if (!response.user_id)
-                return;
+            // send the data
+            request.send(data);
+            setMessage(message);
+        }
 
-            console.log("user created");
-        };
+        setMessage(message);
     }
 
     function uploadFile(e)
@@ -90,57 +102,69 @@ export default function UploadPage(props)
         // generage file list for new files 
         let newFiles = [];
         let newPreview = [];
-        let i = 0;
+        // let i = 0;
         for (let f of _files) 
         {
-            i++;
-
             newFiles.push(f);
-
-            // only preview 5 images 
-            if(i <= 5)
-                newPreview.push(URL.createObjectURL(f));
+            newPreview.push(URL.createObjectURL(f));
         }
 
         setFiles(newFiles);
         setPreview(newPreview);
     }
 
+  
+    function renderPreview()
+    {
+        let r = []
+        for(let i = 0; i < files.length; i++)
+        {
+            let props = {
+                image : filePreviews[i],
+                caption : files[i].name,
+                fileType : files[i].type
+                // onClick : (e) => removePreviewClick(e, i),
+            }
+            r.push(<FileUpload {...props}></FileUpload>);
+        }
+        return r;
+    }
     
     return (
-      <div className="apply-font">
-          <Navbar {...nprops}></Navbar>
+        <div className="apply-font">
+            <Navbar {...nprops}></Navbar>
 
-          <div className="content">
-                
-                <form className='col'>
+            <div className='container'>
                     <div className='row'>
 
-                        <input type="file"     
-                                id="signup-username" 
-                                placeholder="username"
-                                required=""
-                                multiple
-                                ref={fileUpload}
-                                onChange={uploadFile}></input>
-                    </div>
+                    <form className='col-lg-4 col-md-8 col-sm-fill'>
+                            <div className='row' >
+                                <input type="file"     
+                                    id="signup-username" 
+                                    placeholder="username"
+                                    // required=""
+                                    multiple
+                                    ref={fileUpload}
+                                    onChange={uploadFile}></input>
+                            </div>
 
-                    <div className='row'>
-                        <button id="pink-button" onClick={beginUpload}><strong>Upload</strong></button>
-                    </div>
-                    
+                            <div className='row'>
+                                <button id="pink-button" onClick={beginUpload}><strong>Upload</strong></button>
+                            </div>
+
+                            <row>
+                                {uploadProgress}
+                            </row>
+                            <row>
+                                {messageBox}
+                            </row>
                     </form>
 
-                <div className='col' style={{"float":"right", "overflow-y": "scroll", "margin-left" : "50px", "height" : "90vh"}}>
-
-                        {files &&
-                        filePreviews.map(e => 
-                        {
-                            return <img src={e} style={{"display" : "block"}}></img>
-                        })
-                        } 
+                    <div className='col preview-container'>
+                        {renderPreview()}
+                    </div>
                 </div>
-      </div>
-  </div>
+            </div>
+        </div>
     )
 }

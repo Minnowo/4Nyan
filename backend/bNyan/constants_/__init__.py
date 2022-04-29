@@ -134,8 +134,10 @@ mime_header_lookup = {
 header_mime_lookup = {
     JPEG_HEADER : IMAGE_JPEG ,
     PNG_HEADER  : IMAGE_PNG  ,
-    GIF_HEADER  : IMAGE_GIF  ,
+    GIF_HEADER_1: IMAGE_GIF  ,
+    GIF_HEADER_2: IMAGE_GIF  ,
     BMP_HEADER  : IMAGE_BMP  ,
     WEBP_HEADER : IMAGE_WEBP ,
-    TIFF_HEADER : IMAGE_TIFF ,
+    TIFF_HEADER_1 : IMAGE_TIFF ,
+    TIFF_HEADER_2 : IMAGE_TIFF ,
 }
