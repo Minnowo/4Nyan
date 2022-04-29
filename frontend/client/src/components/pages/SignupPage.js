@@ -64,7 +64,7 @@ export default function RegisterPage(props)
 
 
     return (
-        <div className="apply-font" style={{color: "#fff"}}>
+        <div className="apply-font">
             <Navbar {...nprops}></Navbar>
 
                 <div className="content">
@@ -93,12 +93,12 @@ export default function RegisterPage(props)
 
                         <div className='row'>
                             <button id="pink-button"
-                                onClick={registerUser}><strong>Register</strong></button>
+                                onClick={registerUser}>Register</button>
                         </div>
 
                         <div>
-                            Already have an account?
-                            <a href="login" className='link-bold'> Login</a>
+                            <span className="under-text" >Already have an account?</span>
+                            <a href="login" className='link-bold-lite'> Login</a>
                         </div>
                     </form>
 

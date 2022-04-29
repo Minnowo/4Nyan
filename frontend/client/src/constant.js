@@ -3,6 +3,7 @@ const API_ENDPOINTS = {
     backend_ref : "http://192.168.1.149:721/",
     login : "auth/token/",
     register : "create/user/",
+    upload_file : "create/file/",
     static : {
         video : "static/v/",
         image : "static/i/",

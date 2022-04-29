@@ -10,6 +10,7 @@
 body, #root, .apply-font
 {
     background-color: #1F1F1F;
+    color : #fff;
     position: absolute;
     top: 0;
     left: 0;
@@ -107,17 +108,27 @@ h6 {
     padding-top: 1.82px;
 }
 
-
-a,
-a:hover {
-    background-color: transparent;
+a {
     color: #d9d9d9;
+}
+
+a:hover {
+    color: #EE4864;
+}
+
+a, a:hover {
+    background-color: transparent;
     text-decoration: none;
 }
 
-.link-bold {
+.link-bold-lite {
     color: #FFF;
-    font-weight: bold;
+    font-weight: 300;
+}
+
+.under-text {
+    font-weight: 100;
+    font-size: 14px;
 }
 
 

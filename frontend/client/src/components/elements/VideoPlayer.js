@@ -6,7 +6,7 @@ import Hls from "hls.js";
 import "../../css/video.css"
 
 
-export default function Video(props)
+export default function VideoPlayer(props)
 {
     const playerRef = React.useRef(null);  
 

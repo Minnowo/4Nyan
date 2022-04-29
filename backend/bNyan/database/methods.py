@@ -128,16 +128,14 @@ def get_file_by_id(hash_id : int) -> models.File:
 
 def add_file(file : models.File):
 
-    
     # pain. this makes intelisense break even tho it's the same as the Session class 
     with Session.begin() as session:
        
         result = session.query(TBL_Hash).filter_by(hash = file.hash).first()
         
         if (result):
-            raise exceptions.API_500_SIGNATURE_EXCEPTION 
+            raise exceptions.API_500_FILE_EXISTS_EXCEPTION 
         
-
         new_file = TBL_Hash(
                             hash      = file.hash,
                             size      = file.size,
@@ -148,9 +146,9 @@ def add_file(file : models.File):
                             num_words = file.num_words,
                             has_audio = file.has_audio
                         ) 
-
+        
         session.add(new_file)
-
+        
         # not sure why i can't remove this and have the return outside the with statement
         # i'm guessing it destroys the new_user object above, that or it was a scope issue last i tried
         # but this commits to the database so good enough

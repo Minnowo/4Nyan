@@ -7,6 +7,7 @@ import Default from './components/pages/Default';
 import WatchPage from './components/pages/WatchPage';
 import LoginPage from './components/pages/LoginPage';
 import RegisterPage from './components/pages/SignupPage';
+import UploadPage from './components/pages/UploadPage';
 
 
 export default function App()
@@ -23,6 +24,7 @@ export default function App()
         <Route path="/watch" element={<WatchPage {...state}/>}></Route>
         <Route path="/login" element={<LoginPage {...state}/>}></Route>
         <Route path="/register" element={<RegisterPage {...state}/>}></Route>
+        <Route path="/upload" element={<UploadPage {...state}/>}></Route>
         </Routes>
       </Router>
     );

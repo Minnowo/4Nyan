@@ -76,7 +76,7 @@ export default function LoginPage(props)
 
         
     return (
-        <div className="apply-font" style={{color: "#fff"}}>
+        <div className="apply-font">
             <Navbar {...nprops}></Navbar>
 
             <div className="content">
@@ -105,12 +105,12 @@ export default function LoginPage(props)
 
                     <div className='row'>
                         <button id="pink-button"
-                                onClick={loginUser}><strong>Login</strong></button>
+                                onClick={loginUser}>Login</button>
                     </div>
 
                     <div>
-                        Don't have an account?
-                        <a href="register" className='link-bold'> Register</a>
+                        <span className="under-text" >Don't have an account?</span>
+                        <a href="register" className='link-bold-lite'> Register</a>
                     </div>
                 </form>
 

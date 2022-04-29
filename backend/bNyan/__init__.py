@@ -1,9 +1,10 @@
 
-from asyncio import constants
+
 import os 
-from fastapi import FastAPI, Request, Depends
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request, Depends, File, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm 
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 
 from . import exceptions
 from . import methods 
@@ -12,6 +13,7 @@ from . import models
 from . import database 
 from . import constants_
 from . import auth 
+from . import util 
 
 import hashlib
 
@@ -29,6 +31,7 @@ origins = [
     "192.168.1.149:722",
 ]
 
+app.add_middleware(GZipMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -43,6 +46,7 @@ app.add_middleware(
 @app.get('/get_file')
 async def getfile(request : Request, file_id : str = ""):
     
+
     if not file_id:
         raise exceptions.API_400_BAD_REQUEST_EXCEPTION
 
@@ -53,14 +57,33 @@ async def getfile(request : Request, file_id : str = ""):
     return methods.static_lookup(file_id)
 
 
+@app.post("/create/file")
+async def create_item(request : Request, data: UploadFile = File(...)):
+    
+    data_size = util.parse_int(request.headers.get('content-length', None), None)
+
+    if not data or not data_size:
+        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+
+    if data_size > constants_.GIGABYTE:
+        raise exceptions.API_400_BAD_FILE_EXCEPTION
+
+    await methods.process_file_upload(data, data_size)
+    
+    return True 
+
+
+    
+
+
 @app.post('/create/user')
-def register_user(request : Request, data: OAuth2PasswordRequestForm = Depends()):
+async def register_user(request : Request, data: OAuth2PasswordRequestForm = Depends()):
     
     return database.methods.create_user(data)
 
 
 @app.post('/auth/token')
-def login(request : Request, data: OAuth2PasswordRequestForm = Depends()):
+async def login(request : Request, data: OAuth2PasswordRequestForm = Depends()):
 
     username = data.username
     password = data.password
@@ -103,6 +126,12 @@ async def staticv1(category: str, path: str, request : Request, ts : str = ""):
 
 def main():
     import uvicorn
+
+    util.create_directory(constants_.STATIC_VIDEO_PATH)
+    util.create_directory(constants_.STATIC_IMAGE_PATH)
+    util.create_directory(constants_.STATIC_M3U8_PATH)
+    util.create_directory(constants_.STATIC_TEMP_PATH)
+    util.create_directory(constants_.STATIC_AUDIO_PATH)
 
     database.Base.metadata.create_all()
     uvicorn.run(app, host="0.0.0.0", port=721)

@@ -55,6 +55,33 @@ def parse_int(value : str, default = None):
     except (ValueError, TypeError):
         return default
 
+def rename_file(filename : str, new_filename : str, *, replace : bool = False) -> bool:
+    """ 
+    Renames the given file with the new filename 
+
+    replace : bool - should any existing files be deleted/replaced by the given file
+
+    returns True if the file was renamed otherwise False 
+    """
+
+    if not new_filename:
+        return False 
+
+    try:
+        if os.path.isfile(new_filename):
+
+            if not replace:
+                return False 
+            
+            if not remove_file(new_filename):
+                return False 
+
+        os.rename(filename, new_filename)
+        return True 
+
+    except OSError:
+        return False 
+
 
 def iter_file(file, chunk_size : int = 262144): # 256kb 
     """    takes a file handle and yields it in blocks    """
@@ -66,7 +93,19 @@ def iter_file(file, chunk_size : int = 262144): # 256kb
         yield next_block
         
         next_block = file.read(chunk_size)
+
+
+async def iter_file_async(file, chunk_size : int = 262144): # 256kb 
+    """    takes a file handle and yields it in blocks    """
+
+    next_block = await file.read(chunk_size)
+    
+    while len( next_block ) > 0:
         
+        yield next_block
+        
+        next_block = await file.read(chunk_size)
+              
   
 def get_extra_file_hash(path : str) -> tuple:
     """    returns a tuple of hashes as bytes in the order ( md5, sha1, sha512 )    """  
@@ -86,3 +125,14 @@ def get_extra_file_hash(path : str) -> tuple:
              h_sha1.digest(), 
              h_sha512.digest() )
     
+
+def get_temp_file_in_path(path : str):
+    """ returns a path in the given folder that does not exist """
+
+    filename = os.path.join(path, os.urandom(32).hex())
+
+    while os.path.isfile(filename):
+        filename = os.path.join(path, os.urandom(32).hex())
+
+    return filename
+

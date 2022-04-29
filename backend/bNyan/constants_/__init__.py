@@ -1,5 +1,14 @@
 import os 
 
+from .file_headers import *
+from .mime_types import *
+
+
+BYTE = 1
+KILOBYTE = BYTE     * 1024
+MEGABYTE = KILOBYTE * 1024
+GIGABYTE = MEGABYTE * 1024
+
 
 ######## Pathing and API ########
 
@@ -9,7 +18,11 @@ MIN_IMG_PATH_LENGTH = 3
 FFMPEG_PATH = ""
 FFPROBE_PATH = ""
 
-STATIC_IMAGES_PATH = "/static/images/"
+STATIC_IMAGE_PATH = os.path.join("static", "i")
+STATIC_VIDEO_PATH = os.path.join("static", "v")
+STATIC_M3U8_PATH  = os.path.join("static", "m3u8")
+STATIC_TEMP_PATH  = os.path.join("static", "tmp")
+STATIC_AUDIO_PATH = os.path.join("static", "a")
 APP_ROOT = "./"
 
 
@@ -60,46 +73,12 @@ RESTRICT_MAP_NO_SEP = {
 
 
 
-# enums here (idk if the numbers are random, 
-# i took this from https://github.com/hydrusnetwork/hydrus/blob/b927c938914a7c71a7fa693e7e640039b324e971/hydrus/core/HydrusConstants.py#L496)
-
-# image 
-IMAGE_JPEG = 1
-IMAGE_PNG = 2
-IMAGE_GIF = 3
-IMAGE_BMP = 4
-IMAGE_ICON = 7
-IMAGE_APNG = 23
-IMAGE_WEBP = 33
-IMAGE_TIFF = 34
-
-# audio
-AUDIO_MP3 = 13
-AUDIO_OGG = 15
-AUDIO_FLAC = 16
-AUDIO_WMA = 17
-AUDIO_M4A = 36
-AUDIO_WAVE = 46
-AUDIO_MKV = 48
-AUDIO_MP4 = 49
-
-# video
-VIDEO_FLV = 9
-VIDEO_MP4 = 14
-VIDEO_WMV = 18
-VIDEO_MKV = 20
-VIDEO_WEBM = 21
-VIDEO_MPEG = 25
-VIDEO_MOV = 26
-VIDEO_AVI = 27
-VIDEO_OGV = 47
 
 mime_ext_lookup = {
     IMAGE_JPEG : '.jpg',
-    IMAGE_PNG : '.png',
-    IMAGE_APNG : '.png',
-    IMAGE_GIF : '.gif',
-    IMAGE_BMP : '.bmp',
+    IMAGE_PNG  : '.png',
+    IMAGE_GIF  : '.gif',
+    IMAGE_BMP  : '.bmp',
     IMAGE_WEBP : '.webp',
     IMAGE_TIFF : '.tiff',
     IMAGE_ICON : '.ico',
@@ -122,4 +101,41 @@ mime_ext_lookup = {
     VIDEO_MKV : '.mkv',
     VIDEO_OGV : '.ogv',
     VIDEO_WEBM : '.webm',
+}
+
+mime_header_lookup = {
+    IMAGE_JPEG : JPEG_HEADER,
+    IMAGE_PNG  : PNG_HEADER,
+    IMAGE_GIF  : GIF_HEADER,
+    IMAGE_BMP  : BMP_HEADER,
+    IMAGE_WEBP : WEBP_HEADER,
+    IMAGE_TIFF : TIFF_HEADER,
+
+    # AUDIO_M4A : '.m4a',
+    # AUDIO_MP3 : '.mp3',
+    # AUDIO_MKV : '.mkv',
+    # AUDIO_MP4 : '.mp4',
+    # AUDIO_OGG : '.ogg',
+    # AUDIO_FLAC : '.flac',
+    # AUDIO_WAVE : '.wav',
+    # AUDIO_WMA : '.wma',
+
+    # VIDEO_AVI : '.avi',
+    # VIDEO_FLV : '.flv',
+    # VIDEO_MOV : '.mov',
+    # VIDEO_MP4 : '.mp4',
+    # VIDEO_MPEG : '.mpeg',
+    # VIDEO_WMV : '.wmv',
+    # VIDEO_MKV : '.mkv',
+    # VIDEO_OGV : '.ogv',
+    # VIDEO_WEBM : '.webm',
+}
+
+header_mime_lookup = {
+    JPEG_HEADER : IMAGE_JPEG ,
+    PNG_HEADER  : IMAGE_PNG  ,
+    GIF_HEADER  : IMAGE_GIF  ,
+    BMP_HEADER  : IMAGE_BMP  ,
+    WEBP_HEADER : IMAGE_WEBP ,
+    TIFF_HEADER : IMAGE_TIFF ,
 }

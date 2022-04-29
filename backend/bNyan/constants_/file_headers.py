@@ -1,0 +1,26 @@
+
+
+# acceptable image formats 
+BMP_HEADER = b"BM"
+
+GIF_HEADER_1 = b"GIF89a"
+GIF_HEADER_2 = b"GIF87a"
+GIF_HEADER   = (GIF_HEADER_1, GIF_HEADER_2)
+
+PNG_HEADER   = b"\x89PNG\r\n\x1a\n"
+JPEG_HEADER   = b"\xFF\xD8\xFF"
+WEBP_HEADER  = b"RIFF"
+
+TIFF_HEADER_1 = b"MM\x00*" # big endian
+TIFF_HEADER_2 = b"II*\x00" # little endian
+TIFF_HEADER   = (TIFF_HEADER_1, TIFF_HEADER_2)
+
+ALL_FILE_HEADERS = sorted([
+        BMP_HEADER, GIF_HEADER_1, 
+        GIF_HEADER_2, PNG_HEADER, 
+        JPEG_HEADER, WEBP_HEADER, 
+        TIFF_HEADER_1, TIFF_HEADER_2
+        ],  key=lambda x : len(x))
+
+LONGEST_FILE_HEADER = ALL_FILE_HEADERS[-1]
+LONGEST_FILE_HEADER_LENGTH = len(LONGEST_FILE_HEADER)
