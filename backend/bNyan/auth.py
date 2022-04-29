@@ -62,6 +62,16 @@ def get_salt(*, rounds : int = SALT_ROUNDS, prefix : bytes = SALT_PREFIX) -> byt
 
 
 @manager.user_loader()
+def load_user(username : str)  -> models.UserAuthIn:
+
+    
+    user = database.Methods.get_user(username)
+
+    if not user:
+        return None
+
+    return user 
+
 def authenticate_user(username : str, password : str) -> models.UserAuthIn:
     """ authenticates if the given login is a valid user """
 

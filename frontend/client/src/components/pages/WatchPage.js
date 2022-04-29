@@ -48,28 +48,28 @@ export default function WatchPage(props)
                                 <div className="tag-container field-name ">
                                     Tags:
                                     <span className="tags">
-                                        <a href="/tag/big-breasts/" className="tag tag-2937 ">
-                                            <span className="name">big breasts</span>
+                                        <a href="/tag/cats/" className="tag tag-2937 ">
+                                            <span className="name">cats</span>
                                             <span className="count">131K</span>
                                         </a>
 
-                                        <a href="/tag/sole-female/" className="tag tag-35762 ">
-                                            <span className="name">sole female</span>
+                                        <a href="/tag/people/" className="tag tag-35762 ">
+                                            <span className="name">people</span>
                                             <span className="count">97K</span>
                                         </a>
 
-                                        <a href="/tag/dark-skin/" className="tag tag-19018 ">
-                                            <span className="name">dark skin</span>
+                                        <a href="/tag/dark/" className="tag tag-19018 ">
+                                            <span className="name">dark</span>
                                             <span className="count">28K</span>
                                         </a>
                                         
-                                        <a href="/tag/x-ray/" className="tag tag-20035 ">
-                                            <span className="name">x-ray</span>
+                                        <a href="/tag/super hero/" className="tag tag-20035 ">
+                                            <span className="name">super hero</span>
                                             <span className="count">26K</span>
                                         </a>
 
-                                        <a href="/tag/sex-toys/" className="tag tag-14971 ">
-                                            <span className="name">sex toys</span>
+                                        <a href="/tag/dogs/" className="tag tag-14971 ">
+                                            <span className="name">dogs</span>
                                             <span className="count">25K</span>
                                         </a>
 
@@ -78,8 +78,8 @@ export default function WatchPage(props)
                                             <span className="count">13K</span>
                                         </a>
 
-                                        <a href="/tag/large-insertions/" className="tag tag-28778 ">
-                                            <span className="name">large insertions</span>
+                                        <a href="/tag/insects/" className="tag tag-28778 ">
+                                            <span className="name">insects</span>
                                             <span className="count">1K</span>
                                         </a>
 

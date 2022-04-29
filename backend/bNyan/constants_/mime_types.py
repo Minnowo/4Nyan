@@ -5,6 +5,8 @@
 # enums here (idk if the numbers are random, 
 # i took this from https://github.com/hydrusnetwork/hydrus/blob/b927c938914a7c71a7fa693e7e640039b324e971/hydrus/core/HydrusConstants.py#L496)
 
+UNKNOWN = 0
+
 # image 
 IMAGE_JPEG = 1
 IMAGE_PNG = 2

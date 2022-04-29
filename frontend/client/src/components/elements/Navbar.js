@@ -4,7 +4,7 @@ import "../../css/bootstrap.min.css"
 import "../../css/Navbar.css"
 
 
-export default function Nav(props)
+export default function Navbar(props)
 {
 
     function renderRightSide(props)

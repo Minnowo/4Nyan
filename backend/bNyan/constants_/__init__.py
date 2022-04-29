@@ -2,8 +2,8 @@ import os
 
 from .file_headers import *
 from .mime_types import *
-
-
+# from .status_codes import *
+from . import status_codes
 BYTE = 1
 KILOBYTE = BYTE     * 1024
 MEGABYTE = KILOBYTE * 1024
@@ -75,6 +75,8 @@ RESTRICT_MAP_NO_SEP = {
 
 
 mime_ext_lookup = {
+    UNKNOWN : "unknown",
+
     IMAGE_JPEG : '.jpg',
     IMAGE_PNG  : '.png',
     IMAGE_GIF  : '.gif',

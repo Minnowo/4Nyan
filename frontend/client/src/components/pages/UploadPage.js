@@ -2,12 +2,15 @@ import React from 'react'
 import Navbar from "../elements/Navbar";
 import FileUpload from '../elements/FileUpload';
 
+import postData from '../../requests';
+
 import "../../css/LoginRegister.css"
 import "../../css/UploadPage.css"
 import "../../css/bootstrap.min.css"
 import "../../css/global.css"
 
 import API_ENDPOINTS from '../../constant';
+
 
 export default function UploadPage(props)
 {
@@ -16,6 +19,7 @@ export default function UploadPage(props)
     const [files       , setFiles  ] = React.useState([]);
     const [filePreviews, setPreview] = React.useState([]);
     const [messageBox  , setMessage] = React.useState([]);
+    
     const [uploadProgress, setProgress] = React.useState("");
 
     const fileUpload = React.useRef("");
@@ -38,7 +42,7 @@ export default function UploadPage(props)
         }
     });
 
-    function beginUpload(e)
+    async function beginUpload(e)
     {
         // prevents the form from submitting 
         e.preventDefault();
@@ -49,44 +53,32 @@ export default function UploadPage(props)
         let message = []
         for(let f of files)
         {
-            const totalSize = f.size;
-            const data = new FormData();
+            const upload_endpoint = API_ENDPOINTS.backend_ref + API_ENDPOINTS.upload_file;
+            const totalSize       = f.size;
+            const data            = new FormData();
 
-            // Update the formData object
-            data.append("data", f, f.name);
-            
-            let request = new XMLHttpRequest();
-            
-            // upload progress for current file
-            request.upload.onprogress = (event) => 
-            {
-                setProgress(`'${f.name}: uploaded ${event.loaded} / ${totalSize} bytes`)
-            }
-            
-            // on request goes through, handle the response
-            request.onload = function () 
-            {
-                if(request.status == 200)
-                {
-                    message.push(<div style={{color:"green"}}>'{f.name}': upload status: {request.status.toString()}</div>);
-                }
-                else 
-                {
-                    message.push(<div style={{color:"red"}}>'{f.name}': upload status: {request.status.toString()}</div>);
-                }
+            const headers = {
+                // access_token : cookies.get("access_token"),
+                // token_type   : cookies.get("token_type")
+                Authorization :  `${cookies.get("token_type")} ${cookies.get("access_token")}`,
             };
 
-            request.open('POST', API_ENDPOINTS.backend_ref + API_ENDPOINTS.upload_file, true);
+            function progress(event)
+            {
+                setProgress(`${f.name}: uploaded ${event.loaded} / ${totalSize} bytes`);
+            }
 
-            // send the data
-            request.send(data);
-            setMessage(message);
+            data.append("data", f, f.name);
+            
+            await postData(upload_endpoint, data, headers, progress)
+                .then(e    => message.push(<div style={{color:"green"}} key={f.name}>{f.name}: upload status: {e.status}</div>))
+                .catch(err => message.push(<div style={{color:"red"}}   key={f.name}>{f.name}: upload status: {err.status}</div>));
         }
 
         setMessage(message);
     }
 
-    function uploadFile(e)
+    function generatePreview(e)
     {
         if(!fileUpload.current.files || fileUpload.current.files.length == 0)
             return;
@@ -102,7 +94,7 @@ export default function UploadPage(props)
         // generage file list for new files 
         let newFiles = [];
         let newPreview = [];
-        // let i = 0;
+
         for (let f of _files) 
         {
             newFiles.push(f);
@@ -125,7 +117,7 @@ export default function UploadPage(props)
                 fileType : files[i].type
                 // onClick : (e) => removePreviewClick(e, i),
             }
-            r.push(<FileUpload {...props}></FileUpload>);
+            r.push(<FileUpload {...props} key={i}></FileUpload>);
         }
         return r;
     }
@@ -142,22 +134,27 @@ export default function UploadPage(props)
                                 <input type="file"     
                                     id="signup-username" 
                                     placeholder="username"
-                                    // required=""
+                                    required=""
                                     multiple
                                     ref={fileUpload}
-                                    onChange={uploadFile}></input>
+                                    onChange={generatePreview}></input>
                             </div>
 
                             <div className='row'>
                                 <button id="pink-button" onClick={beginUpload}><strong>Upload</strong></button>
                             </div>
 
-                            <row>
-                                {uploadProgress}
-                            </row>
-                            <row>
-                                {messageBox}
-                            </row>
+                            <div className='row'>
+                                <span>
+                                    {uploadProgress}
+                                </span>
+                            </div>
+
+                            <div className='row'>
+                                <span>
+                                    {messageBox}
+                                </span>
+                            </div>
                     </form>
 
                     <div className='col preview-container'>

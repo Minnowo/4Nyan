@@ -134,7 +134,7 @@ def add_file(file : models.File):
         result = session.query(TBL_Hash).filter_by(hash = file.hash).first()
         
         if (result):
-            raise exceptions.API_500_FILE_EXISTS_EXCEPTION 
+            raise exceptions.API_409_FILE_EXISTS_EXCEPTION 
         
         new_file = TBL_Hash(
                             hash      = file.hash,

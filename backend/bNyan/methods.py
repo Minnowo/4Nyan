@@ -6,10 +6,9 @@ from urllib.error import HTTPError
 from urllib.request import Request
 from fastapi.responses import FileResponse
 from fastapi import Response, UploadFile, HTTPException
-from pytest import console_main
 
 from . import reg
-from . import constants_
+from . import constants_ 
 from . import exceptions
 from . import util
 from . import database
@@ -66,6 +65,7 @@ async def get_valid_file_header(data : UploadFile, data_length : int):
 
 def get_static_path_from_mime(mime : int):
     """ returns the static path where a file should be stored based of the given mime type """
+    
     if mime in constants_.mime_types.IMAGE_MIMES:
         return constants_.STATIC_IMAGE_PATH
 
@@ -185,7 +185,7 @@ async def process_file_upload(file : UploadFile, data_length : int):
     tempname = util.get_temp_file_in_path(constants_.STATIC_TEMP_PATH)
 
     # make use of the valid header, get the mime type and file extension
-    mime     = constants_.header_mime_lookup.get(header)
+    mime     = constants_.header_mime_lookup.get(header, constants_.mime_types.UNKNOWN)
     file_ext = constants_.mime_ext_lookup.get(mime)
 
     # begin our sha256 hash, this will be made as we download the file

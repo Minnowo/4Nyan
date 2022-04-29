@@ -58,8 +58,8 @@ async def getfile(request : Request, file_id : str = ""):
 
 
 @app.post("/create/file")
-async def create_item(request : Request, data: UploadFile = File(...)):
-    
+async def create_item(request : Request, data: UploadFile = File(...), user = Depends(auth.manager)):
+
     data_size = util.parse_int(request.headers.get('content-length', None), None)
 
     if not data or not data_size:
@@ -72,8 +72,6 @@ async def create_item(request : Request, data: UploadFile = File(...)):
     
     return True 
 
-
-    
 
 
 @app.post('/create/user')
@@ -88,15 +86,17 @@ async def login(request : Request, data: OAuth2PasswordRequestForm = Depends()):
     username = data.username
     password = data.password
 
-    user = auth.authenticate_user(username, password)
+    user = auth.load_user(username)
 
     if not user:
         raise exceptions.API_401_CREDENTIALS_EXCEPTION
 
+    if not auth.verify_password(password, user.hashed_password):
+        raise exceptions.API_401_CREDENTIALS_EXCEPTION
+
     access_token = auth.manager.create_access_token(
         data = {
-            "username" : username,
-            "user_id"  : user.user_id
+            "sub" : username,
         }
     )
 
