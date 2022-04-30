@@ -2,7 +2,6 @@
 
 
 #################################### Image 
-from backend.bNyan.constants_.mime_types import UNDETERMINED_MP4
 
 
 IMAGE_GIF_HEADERS = ( 
