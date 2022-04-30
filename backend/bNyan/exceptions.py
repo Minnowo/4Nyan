@@ -1,4 +1,6 @@
 from fastapi import HTTPException, status
+import collections.abc
+import os 
 
 API_418_TEAPOT_EXCEPTION = HTTPException(
     status_code=418,
@@ -31,6 +33,12 @@ API_500_SIGNATURE_EXCEPTION = HTTPException(
     detail="server error",
 )
 
+API_500_OSERROR = HTTPException(
+    status_code=500,
+    detail="server error",
+)
+
+
 API_409_FILE_EXISTS_EXCEPTION = HTTPException(
     status_code=409,
     detail="File already exists",
@@ -55,3 +63,42 @@ API_406_PASSWORD_EXCEPTION = HTTPException(
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
             detail="password does not follow guidelines"
         )
+
+
+
+class NyanException( Exception ):
+    """ base exceptions """
+
+    def __str__( self ):
+        
+        if not isinstance( self.args, collections.abc.Iterable ):
+        
+            return os.linesep.join( [ repr( self.args ) ] )
+            
+        s = []
+        
+        for arg in self.args:
+            
+            try:
+                
+                s.append( str( arg ) )
+                
+            except:
+                
+                s.append( repr( arg ) )
+            
+        return os.linesep.join( s )
+        
+
+class UnsupportedFileException(NyanException):
+    """ unsupported file """
+
+class ZeroSizeFileException( UnsupportedFileException ): 
+    """ file has 0 length """
+
+class DamagedOrUnusualFileException( UnsupportedFileException ): 
+    """ the file is damaged """
+
+
+class FFMPEGRequiredException(NyanException):
+    """ ffmpeg is required to parse the data (this is called when checking file types, it means the file must be downloaded to determine the type) """

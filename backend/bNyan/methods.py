@@ -1,23 +1,23 @@
 import os 
 import hashlib
-import asyncio
-from urllib.error import HTTPError
 
-from urllib.request import Request
 from fastapi.responses import FileResponse
-from fastapi import Response, UploadFile, HTTPException
+from fastapi import Response, UploadFile, HTTPException, Request
 
+from .constants_ import mime_types as MT 
+
+from . import file_handling
 from . import reg
 from . import constants_ 
 from . import exceptions
 from . import util
 from . import database
 from . import models 
-# from .database.tables_postgres import *
+from . import bn_logging
+from . import m3u8
 
-CHUNK_SIZE         = 1024 * 1024    # 1mb 
-BYTES_PER_RESPONSE = CHUNK_SIZE * 8 # ~8mb
-
+LOGGER = bn_logging.get_logger(constants_.BNYAN_METHODS[0], constants_.BNYAN_METHODS[1])
+VIDEO_PROCESS = m3u8.VideoSplitter()
 
 def file_check(path : str, rout : str, cleans=[reg.INVALID_PATH_CHAR.sub]):
     """ checks if the given file exists in the given rout and cleans the path with the list of given regex.sub """
@@ -66,13 +66,13 @@ async def get_valid_file_header(data : UploadFile, data_length : int):
 def get_static_path_from_mime(mime : int):
     """ returns the static path where a file should be stored based of the given mime type """
     
-    if mime in constants_.mime_types.IMAGE_MIMES:
+    if mime in MT.IMAGE_MIMES:
         return constants_.STATIC_IMAGE_PATH
 
-    if mime in constants_.mime_types.VIDEO_MIMES:
+    if mime in MT.VIDEO_MIMES:
         return constants_.STATIC_VIDEO_PATH
 
-    if mime in  constants_.mime_types.AUDIO_MIMES:
+    if mime in  MT.AUDIO_MIMES:
         return constants_.STATIC_VIDEO_PATH
 
     return constants_.STATIC_TEMP_PATH
@@ -106,7 +106,7 @@ def stream_video(video_name : str, request : Request):
         raise exceptions.API_400_BAD_REQUEST_EXCEPTION
 
     start_byte_requested = int(_range.group(1))
-    end_byte_planned     = min(start_byte_requested + BYTES_PER_RESPONSE, total_response_size)
+    end_byte_planned     = min(start_byte_requested + constants_.VIDEO_STREAM_CHUNK_SIZE, total_response_size)
 
     with open(video_name, "rb") as reader:
 
@@ -173,36 +173,68 @@ def static_lookup(file_hash : str):
     return file_info_json
 
 
-async def process_file_upload(file : UploadFile, data_length : int):
+async def process_file_upload(file : UploadFile):
 
-    # check for valid header, get the valid header, and get the read bytes
-    valid, header, read_bytes = await get_valid_file_header(file, data_length)
+    header_bytes = await file.read(256)
 
-    if not valid:
+    try:
+        
+        # if the mime is an unknown mp4 or wm, we will need ffmpeg to validate the video
+        # if this is the case we have to download the whole file 
+        mime = file_handling.get_mime_from_bytes(header_bytes)
+
+    except exceptions.FFMPEGRequiredException:
+        
+        mime = MT.UNDETERMINED_VIDEO
+
+
+    if mime == MT.APPLICATION_UNKNOWN:
         raise exceptions.API_400_BAD_FILE_EXCEPTION
+
 
     # get a temp file 
     tempname = util.get_temp_file_in_path(constants_.STATIC_TEMP_PATH)
 
-    # make use of the valid header, get the mime type and file extension
-    mime     = constants_.header_mime_lookup.get(header, constants_.mime_types.UNKNOWN)
-    file_ext = constants_.mime_ext_lookup.get(mime)
-
     # begin our sha256 hash, this will be made as we download the file
     h_sha256 = hashlib.sha256()
-    h_sha256.update(read_bytes)
+    h_sha256.update(header_bytes)
 
     with open(tempname, "wb") as writer:
         
         # make sure to write the bytes read getting the header
-        writer.write(read_bytes)
+        writer.write(header_bytes)
 
         # download the file in chunks 
-        async for chunk in util.iter_file_async(file):
+        async for chunk in util.iter_file_async(file, chunk_size=constants_.IMAGE_UPLOAD_CHUNK_SIZE):
 
             h_sha256.update(chunk)
 
             writer.write(chunk)
+
+
+    # we need to use ffmpeg to check the video
+    if mime == MT.UNDETERMINED_VIDEO:
+
+        mime = file_handling.get_video_mime(tempname)
+
+        if mime == MT.APPLICATION_UNKNOWN:
+
+            LOGGER.warning("unknown video, ffmpeg could not determine video format -> assuming invalid file")
+
+            util.remove_file(tempname)
+
+            raise exceptions.API_400_BAD_FILE_EXCEPTION
+
+
+    file_ext = constants_.mime_ext_lookup.get(mime, None)
+
+    # i probably just forgot to add the mime to the extension map if this is true 
+    if not file_ext:
+
+        LOGGER.warning("could not find a file extension for mime type of '{}'".format(mime))
+        
+        raise exceptions.API_400_BAD_FILE_EXCEPTION
+
 
     # get our sha256 hash
     sha256 = h_sha256.digest()
@@ -223,21 +255,61 @@ async def process_file_upload(file : UploadFile, data_length : int):
         # will throw an exception if the file is in the database 
         database.Methods.add_file(db_file)
     except HTTPException as e:
+        
+        LOGGER.warning("error thrown adding file to the database -> {}".format(e))
+
         util.remove_file(tempname) # delete the temp file 
         raise e 
 
-    # get the new filename 
-    filename = os.path.join(get_static_path_from_mime(mime), sha256.hex() + file_ext)
+    sha256_hex  = sha256.hex()
+    static_path = get_static_path_from_mime(mime)
+    filename    = os.path.join(static_path, sha256_hex + file_ext)
 
     # rename the file
     if not util.rename_file(tempname, filename):
-        print("=" * 64)
-        print("   SHA256:", sha256)
-        print("     File: ", filename)
-        print("Temp File: ", tempname)
-        print("Could not rename from temp path to given path, reason unknown")
-        print("=" * 64)
+        LOGGER.warning("Cannot rename file '{0}' -> '{1}' hash '{2}' assuming file exists".format(tempname, filename, sha256_hex))
     
+    print(filename)
+
+    if static_path != constants_.STATIC_VIDEO_PATH:
+        return
+
+    ts_folder = os.path.join(static_path, sha256_hex)
+
+    if not util.create_directory(ts_folder):
+        LOGGER.warning("Cannot create ts folder '{0}' for video file '{1}'".format(ts_folder, filename))
+
+        # util.remove_file(tempname)
+        raise exceptions.API_500_OSERROR
+
+
+    try:
+        LOGGER.info("Processing video: {}".format(filename))
+        VIDEO_PROCESS.split_video(filename, ts_folder, constants_.TS_FILE_DURATION)
+
+    except m3u8.exceptions.FFMPEG_Exception as e:
+        
+        LOGGER.error(e)
+
+        database.Methods.remove_file(sha256)
+        
+        raise exceptions.API_400_BAD_FILE_EXCEPTION
+        
+
+    LOGGER.info("Generating m3u8")
+
+    # TODO: change the 0.0.0.0 into server ip 
+    LOGGER.warning("TODO: change the 0.0.0.0 into server ip -> methods.py line 303")
+    m = m3u8.PlaylistGenerator.generate_from_directory("http://0.0.0.0/static/v/" + sha256_hex + "?ts=", ts_folder, constants_.TS_FILE_DURATION)
+    
+    m3u8_file =  os.path.join(constants_.STATIC_M3U8_PATH, sha256_hex + ".m3u8")
+
+    with open(m3u8_file, "w") as writer:
+        writer.write(m)
+
+    LOGGER.info(m3u8_file)
+
+        
 
 
 

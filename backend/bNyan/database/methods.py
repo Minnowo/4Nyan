@@ -2,7 +2,8 @@
 
 
 from . import Session
-from .tables_postgres import *
+# from .tables_postgres import *
+from .tables_sqlite import *
 
 from .. import models
 
@@ -125,6 +126,19 @@ def get_file_by_id(hash_id : int) -> models.File:
                 has_audio = result.has_audio
             )
 
+def remove_file(hash : bytes):
+    with Session.begin() as session:
+
+        result = session.query(TBL_Hash).filter_by(hash = hash).first()
+        
+        if not result:
+            return True 
+
+        session.delete(result)
+        session.commit()
+
+        return True 
+
 
 def add_file(file : models.File):
 
@@ -133,7 +147,7 @@ def add_file(file : models.File):
        
         result = session.query(TBL_Hash).filter_by(hash = file.hash).first()
         
-        if (result):
+        if result:
             raise exceptions.API_409_FILE_EXISTS_EXCEPTION 
         
         new_file = TBL_Hash(

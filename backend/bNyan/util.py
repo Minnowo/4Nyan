@@ -1,5 +1,6 @@
 import os 
 import hashlib
+import subprocess
 from .reg import INVALID_PATH_CHAR, DIGIT
 
 def natural_sort_key(s, _nsre=DIGIT):
@@ -7,14 +8,17 @@ def natural_sort_key(s, _nsre=DIGIT):
     return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 
 
+
 def strip_invalid_path(path : str) -> str:
     """    Removes invalid path characters    """
     return INVALID_PATH_CHAR.sub("", path)
 
 
+
 def create_directory_from_file_name(path : str) -> bool:
     """    Creates a directory from the file path.    """
     return create_directory(os.path.dirname(path))
+
 
 
 def create_directory(path : str) -> bool:
@@ -26,6 +30,7 @@ def create_directory(path : str) -> bool:
     return os.path.isdir(path)
 
 
+
 def remove_file(path : str) -> bool:
     """    Deletes the given file.    """
     try:
@@ -35,6 +40,7 @@ def remove_file(path : str) -> bool:
     return not os.path.exists(path)
 
 
+
 def remove_directory(path : str) -> bool:
     """    Deletes the given directory.    """
     try:
@@ -42,6 +48,7 @@ def remove_directory(path : str) -> bool:
     except OSError:
         pass
     return not os.path.isdir(path)
+
 
 
 def parse_int(value : str, default = None):
@@ -54,6 +61,7 @@ def parse_int(value : str, default = None):
         return int(value)
     except (ValueError, TypeError):
         return default
+
 
 def rename_file(filename : str, new_filename : str, *, replace : bool = False) -> bool:
     """ 
@@ -83,6 +91,7 @@ def rename_file(filename : str, new_filename : str, *, replace : bool = False) -
         return False 
 
 
+
 def iter_file(file, chunk_size : int = 262144): # 256kb 
     """    takes a file handle and yields it in blocks    """
 
@@ -93,6 +102,7 @@ def iter_file(file, chunk_size : int = 262144): # 256kb
         yield next_block
         
         next_block = file.read(chunk_size)
+
 
 
 async def iter_file_async(file, chunk_size : int = 262144): # 256kb 
@@ -106,6 +116,7 @@ async def iter_file_async(file, chunk_size : int = 262144): # 256kb
         
         next_block = await file.read(chunk_size)
               
+
   
 def get_extra_file_hash(path : str) -> tuple:
     """    returns a tuple of hashes as bytes in the order ( md5, sha1, sha512 )    """  
@@ -126,6 +137,7 @@ def get_extra_file_hash(path : str) -> tuple:
              h_sha512.digest() )
     
 
+
 def get_temp_file_in_path(path : str):
     """ returns a path in the given folder that does not exist """
 
@@ -135,4 +147,20 @@ def get_temp_file_in_path(path : str):
         filename = os.path.join(path, os.urandom(32).hex())
 
     return filename
+
+
+
+
+def subprocess_communicate( process: subprocess.Popen, timeout : int = 10) -> tuple:
+    """ returns process.communicate with the given timeout """
+
+    while True:
+        
+        try:
+            
+            return process.communicate( timeout = timeout )
+            
+        except subprocess.TimeoutExpired:
+            
+            pass    
 

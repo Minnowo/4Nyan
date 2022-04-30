@@ -64,7 +64,6 @@ def get_salt(*, rounds : int = SALT_ROUNDS, prefix : bytes = SALT_PREFIX) -> byt
 @manager.user_loader()
 def load_user(username : str)  -> models.UserAuthIn:
 
-    
     user = database.Methods.get_user(username)
 
     if not user:

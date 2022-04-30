@@ -50,6 +50,12 @@ export default function UploadPage(props)
         if(!files || files.length < 1)
             return;
 
+        const token      = cookies.get("access_token");
+        const token_type = cookies.get("token_type");
+
+        if (!token || !token_type)
+            return; 
+
         let message = []
         for(let f of files)
         {
@@ -58,9 +64,7 @@ export default function UploadPage(props)
             const data            = new FormData();
 
             const headers = {
-                // access_token : cookies.get("access_token"),
-                // token_type   : cookies.get("token_type")
-                Authorization :  `${cookies.get("token_type")} ${cookies.get("access_token")}`,
+                Authorization :  `${token_type} ${token}`,
             };
 
             function progress(event)
@@ -71,10 +75,10 @@ export default function UploadPage(props)
             data.append("data", f, f.name);
             
             await postData(upload_endpoint, data, headers, progress)
-                .then(e    => message.push(<div style={{color:"green"}} key={f.name}>{f.name}: upload status: {e.status}</div>))
-                .catch(err => message.push(<div style={{color:"red"}}   key={f.name}>{f.name}: upload status: {err.status}</div>));
+                .then(e    => message.push(<div style={{color:"green"}} key={f.name}>{f.name}: {e.status}</div>))
+                .catch(err => message.push(<div style={{color:"red"}}   key={f.name}>{f.name}: {err.status}</div>));
         }
-
+        
         setMessage(message);
     }
 

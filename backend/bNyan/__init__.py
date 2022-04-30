@@ -14,12 +14,13 @@ from . import database
 from . import constants_
 from . import auth 
 from . import util 
+from . import bn_logging
 
 import hashlib
 
+LOGGER = bn_logging.get_logger(constants_.BNYAN_MAIN[0], constants_.BNYAN_MAIN[1])
+
 app = FastAPI()
-
-
 
 origins = [
     "http://localhost:722",
@@ -58,17 +59,18 @@ async def getfile(request : Request, file_id : str = ""):
 
 
 @app.post("/create/file")
-async def create_item(request : Request, data: UploadFile = File(...), user = Depends(auth.manager)):
+async def create_item(request : Request, data: UploadFile = File(...) ): #, user = Depends(auth.manager)):
 
     data_size = util.parse_int(request.headers.get('content-length', None), None)
 
     if not data or not data_size:
         raise exceptions.API_400_BAD_REQUEST_EXCEPTION
 
-    if data_size > constants_.GIGABYTE:
+    # if the file is ~1 gb there's also going to be data with it, so give 50mb of room
+    if data_size > (constants_.GIGABYTE + constants_.MEGABYTE * 50):
         raise exceptions.API_400_BAD_FILE_EXCEPTION
 
-    await methods.process_file_upload(data, data_size)
+    await methods.process_file_upload(data)
     
     return True 
 
@@ -127,13 +129,22 @@ async def staticv1(category: str, path: str, request : Request, ts : str = ""):
 def main():
     import uvicorn
 
+    LOGGER.info("=" * 128)
+    LOGGER.info("Starting...")
+    LOGGER.info("Creating static paths...")
+
     util.create_directory(constants_.STATIC_VIDEO_PATH)
     util.create_directory(constants_.STATIC_IMAGE_PATH)
     util.create_directory(constants_.STATIC_M3U8_PATH)
     util.create_directory(constants_.STATIC_TEMP_PATH)
     util.create_directory(constants_.STATIC_AUDIO_PATH)
 
+    util.create_directory(constants_.BIN_FOLDER)
+
+    LOGGER.info("Creating database tables.")
     database.Base.metadata.create_all()
+
+    LOGGER.info("Running app...")
     uvicorn.run(app, host="0.0.0.0", port=721)
 
     return 0

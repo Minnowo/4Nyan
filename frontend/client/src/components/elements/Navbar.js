@@ -35,6 +35,7 @@ export default function Navbar(props)
                         <li className='nav-item'><a className='nav-link' href='Home'>Home</a></li>
                         <li className='nav-item'><a className='nav-link' href='Image'>Image</a></li>
                         <li className='nav-item'><a className='nav-link' href='watch'>Video</a></li>
+                        <li className='nav-item'><a className='nav-link' href='upload'>Upload</a></li>
                     </ul>
                 </div>
 

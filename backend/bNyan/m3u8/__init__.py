@@ -5,7 +5,7 @@ from subprocess import run, PIPE
 from requests.utils import requote_uri
 
 from .. import util
-from .. import constants
+from .. import constants_
 
 from . import exceptions
 
@@ -70,8 +70,8 @@ class PlaylistGenerator(object):
 
 class VideoSplitter():
     
-    FFMPEG_PATH  = constants.FFMPEG_PATH
-    FFPROBE_PATH = constants.FFPROBE_PATH
+    FFMPEG_PATH  = constants_.FFMPEG_PATH
+    FFPROBE_PATH = constants_.FFPROBE_PATH
 
     def __init__(self, ffmpeg=FFMPEG_PATH, ffmprobe=FFPROBE_PATH) -> None:
         
