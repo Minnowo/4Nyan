@@ -15,7 +15,7 @@ export default function WatchPage(props)
     const vprops = {
         //  http://192.168.1.149:721/static/m3u8/RnM_S4E1.m3u8
         //  http://192.168.1.149:721/static/m3u8/fallen_kingdom.m3u8
-        m3u8 : "http://192.168.1.149:721/static/m3u8/861c214a95d7029b2908874d69180b78b6d42abd386173b2e6cce1bea403e3fd.m3u8",
+        m3u8 : "http://192.168.1.149:721/static/m3u8/1dffc050f17ccbca63c54376174487ae15f46347cdd03cddf36a85f8059af84f.m3u8",
         autoPlay : false
     };
 

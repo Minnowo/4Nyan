@@ -6,6 +6,7 @@ from fastapi import Response, UploadFile, HTTPException, Request
 
 from .constants_ import mime_types as MT 
 
+from . import threading_
 from . import file_handling
 from . import reg
 from . import constants_ 
@@ -14,10 +15,9 @@ from . import util
 from . import database
 from . import models 
 from . import bn_logging
-from . import m3u8
+from . import config 
 
 LOGGER = bn_logging.get_logger(constants_.BNYAN_METHODS[0], constants_.BNYAN_METHODS[1])
-VIDEO_PROCESS = m3u8.VideoSplitter()
 
 def file_check(path : str, rout : str, cleans=[reg.INVALID_PATH_CHAR.sub]):
     """ checks if the given file exists in the given rout and cleans the path with the list of given regex.sub """
@@ -41,26 +41,6 @@ def file_check(path : str, rout : str, cleans=[reg.INVALID_PATH_CHAR.sub]):
 
     return path 
 
-
-async def get_valid_file_header(data : UploadFile, data_length : int):
-    """ 
-    Gets the header from the file, returns a tuple with a bool signaling if the header is valid, the valid header, and the bytes read from the file
-    
-    This function expects the file position to be at 0 and this function doesn't reset the position to 0 after reading.
-
-    Returns (bool, valid_header, read_bytes)
-    """
-
-    length = min(constants_.file_headers.LONGEST_FILE_HEADER_LENGTH, data_length)
-    header = await data.read(length)
-
-    # search through valid byte headers (this is sorted from smallest -> greatest)
-    for valid_header in constants_.file_headers.ALL_FILE_HEADERS:
-
-        if header.startswith(valid_header):
-            return (True, valid_header, header)
-            
-    return (False, b"", header)
 
 
 def get_static_path_from_mime(mime : int):
@@ -173,6 +153,98 @@ def static_lookup(file_hash : str):
     return file_info_json
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def add_file_to_database(sha256 : bytes, file_size : int, mime : int, delete_on_httperr : str):
+
+    db_file = models.File(
+        hash=sha256, 
+        size=file_size, 
+        mime=mime, 
+        width=0, 
+        height=0, 
+        duration=0, 
+        num_words=0, 
+        has_audio=False)
+
+    try:
+        
+        # will throw an exception if the file is in the database 
+        database.Methods.add_file(db_file)
+
+    except HTTPException as e:
+        
+        LOGGER.warning("error thrown adding file to the database -> {}".format(e))
+
+        util.remove_file(delete_on_httperr) # delete the temp file 
+
+        raise e 
+
+
+
+
+def process_video(data):
+    """ passed into a worker queue to split and encode a video into ts files, and then creates the m3u8 file """
+
+    try:
+
+        m3u8 = file_handling.video_handling.split_video(data["file_path"], data["output"])
+
+    except Exception as e:
+
+        LOGGER.error(e)
+        
+        util.remove_file(data["file_path"])
+
+        return 
+
+    util.rename_file(m3u8, data["m3u8_output"], replace=True)
+
+    lines = []
+
+    with open(data["m3u8_output"], "r") as reader:
+
+        for line in reader:
+
+            if reg.IS_TS_FILENAME.match(line):
+
+                lines.append(data["ts_url"] + line)
+                continue
+
+            lines.append(line)
+
+    with open(data["m3u8_output"], "w") as writer:
+
+        writer.writelines(lines)
+
+    try:
+        add_file_to_database(data["sha256_bytes"], data["file_size"], data["mime"], data["file_path"])
+
+    except Exception as e:
+
+        LOGGER.error(e)
+
+
+
+
+
+
 async def process_file_upload(file : UploadFile):
 
     header_bytes = await file.read(256)
@@ -236,32 +308,10 @@ async def process_file_upload(file : UploadFile):
         raise exceptions.API_400_BAD_FILE_EXCEPTION
 
 
-    # get our sha256 hash
-    sha256 = h_sha256.digest()
-    file_size = os.path.getsize(tempname)
+    sha256_bytes = h_sha256.digest()
+    sha256_hex   = sha256_bytes.hex()
+    file_size    = os.path.getsize(tempname)
 
-    # generate a file model to add the file into the database 
-    db_file = models.File(
-        hash=sha256, 
-        size=file_size, 
-        mime=mime, 
-        width=0, 
-        height=0, 
-        duration=0, 
-        num_words=0, 
-        has_audio=False)
-
-    try:
-        # will throw an exception if the file is in the database 
-        database.Methods.add_file(db_file)
-    except HTTPException as e:
-        
-        LOGGER.warning("error thrown adding file to the database -> {}".format(e))
-
-        util.remove_file(tempname) # delete the temp file 
-        raise e 
-
-    sha256_hex  = sha256.hex()
     static_path = get_static_path_from_mime(mime)
     filename    = os.path.join(static_path, sha256_hex + file_ext)
 
@@ -269,45 +319,35 @@ async def process_file_upload(file : UploadFile):
     if not util.rename_file(tempname, filename):
         LOGGER.warning("Cannot rename file '{0}' -> '{1}' hash '{2}' assuming file exists".format(tempname, filename, sha256_hex))
     
-    print(filename)
 
     if static_path != constants_.STATIC_VIDEO_PATH:
+        
+        add_file_to_database(sha256_bytes, file_size, mime, filename)
+
         return
 
     ts_folder = os.path.join(static_path, sha256_hex)
 
     if not util.create_directory(ts_folder):
+
         LOGGER.warning("Cannot create ts folder '{0}' for video file '{1}'".format(ts_folder, filename))
 
-        # util.remove_file(tempname)
+        util.remove_file(filename)
+
         raise exceptions.API_500_OSERROR
 
 
-    try:
-        LOGGER.info("Processing video: {}".format(filename))
-        VIDEO_PROCESS.split_video(filename, ts_folder, constants_.TS_FILE_DURATION)
+    data = {
+        "file_path"    : filename,
+        "output"       : ts_folder,
+        "m3u8_output"  : os.path.join(constants_.STATIC_M3U8_PATH, sha256_hex + ".m3u8"),
+        "ts_url"       : "http://{0}/static/v/{1}?ts=".format(config.get((), "server_address"), sha256_hex),
+        "sha256_bytes" : sha256_bytes,
+        "file_size"    : file_size,
+        "mime"         : mime,
+    }
 
-    except m3u8.exceptions.FFMPEG_Exception as e:
-        
-        LOGGER.error(e)
-
-        database.Methods.remove_file(sha256)
-        
-        raise exceptions.API_400_BAD_FILE_EXCEPTION
-        
-
-    LOGGER.info("Generating m3u8")
-
-    # TODO: change the 0.0.0.0 into server ip 
-    LOGGER.warning("TODO: change the 0.0.0.0 into server ip -> methods.py line 303")
-    m = m3u8.PlaylistGenerator.generate_from_directory("http://0.0.0.0/static/v/" + sha256_hex + "?ts=", ts_folder, constants_.TS_FILE_DURATION)
-    
-    m3u8_file =  os.path.join(constants_.STATIC_M3U8_PATH, sha256_hex + ".m3u8")
-
-    with open(m3u8_file, "w") as writer:
-        writer.write(m)
-
-    LOGGER.info(m3u8_file)
+    threading_.append_worker_data(constants_.THREAD_FFMPEG, data, process_video)
 
         
 

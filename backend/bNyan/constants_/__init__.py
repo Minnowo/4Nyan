@@ -32,6 +32,8 @@ STATIC_LOG_PATH = os.path.join("static", "logs")
 DATABASE_FOLDER = os.path.join("db")
 DATABASE_PATH = os.path.join(DATABASE_FOLDER, "master.data.db")
 
+MAIN_CONFIG = os.path.join(DATABASE_FOLDER, "main.json")
+
 BIN_FOLDER = os.path.join("bin")
 
 FFMPEG_PATH  = os.path.join(BIN_FOLDER, "ffmpeg.exe")
@@ -48,6 +50,12 @@ UNICODE_REPLACEMENT_CHARACTER = u'\ufffd'
 
 BNYAN_MAIN    = ("BNMain"   , os.path.join("static", "logs", "BNMain.log"))
 BNYAN_METHODS = ("BNMethods", os.path.join("static", "logs", "BNMethods.log"))
+BNYAN_THREADS = ("BNThreading", os.path.join("static", "logs", "BNThreading.log"))
+
+
+######## Threads ########
+
+THREAD_FFMPEG = "ffmpeg worker"
 
 
 ######## Datebase ########
@@ -96,6 +104,27 @@ RESTRICT_MAP_NO_SEP = {
 }
 
 
+# HLS Supported Packed Audio formats are:
+# 
+# AAC with ADTS framing [ISO_13818_7]
+# MP3                   [ISO_13818_3]
+# AC-3                  [AC_3]
+# Enhanced AC-3         [AC_3]
+
+
+AUDIO_CODEC_ACC = 55
+AUDIO_CODEC_MP3 = 56
+AUDIO_CODEC_AC_3 = 57
+
+HLS_SUPPORTED_AUDIO_CODECS = [AUDIO_CODEC_ACC, AUDIO_CODEC_MP3, AUDIO_CODEC_AC_3]
+
+AUDIO_CODEC_AAC_FFMPEG_LINE = "aac (LC) (mp4a / 0x6134706D)"
+
+audio_codec_map = {
+    AUDIO_CODEC_ACC : "aac (LC)",
+    AUDIO_CODEC_MP3 : "mp3",
+    AUDIO_CODEC_AC_3 : "ac",
+}
 
 
 mime_ext_lookup = {

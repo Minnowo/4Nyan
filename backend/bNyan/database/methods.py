@@ -179,3 +179,31 @@ def add_file(file : models.File):
             "num_words" : new_file.num_words,
             "has_audio" : new_file.has_audio
         }
+
+
+
+
+def add_file_to_database(sha256 : bytes, file_size : int, mime : int):
+
+    # generate a file model to add the file into the database 
+    db_file = models.File(
+        hash=sha256, 
+        size=file_size, 
+        mime=mime, 
+        width=0, 
+        height=0, 
+        duration=0, 
+        num_words=0, 
+        has_audio=False)
+
+    try:
+        
+        # will throw an exception if the file is in the database 
+        add_file(db_file)
+
+    except HTTPException as e:
+        
+        LOGGER.warning("error thrown adding file to the database -> {}".format(e))
+
+        util.remove_file(tempname) # delete the temp file 
+        raise e 

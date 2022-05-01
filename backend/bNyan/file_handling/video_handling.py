@@ -14,7 +14,7 @@ from .audio_handling import parse_ffmpeg_audio
 from re import search, match
  
 import subprocess
-
+import os.path 
 
 # very big thanks to https://github.com/hydrusnetwork/hydrus
 # 
@@ -62,7 +62,7 @@ def parse_ffmpeg_video_line( lines, png_ok = False ):
 
     if len( lines_video ) == 0:
         
-        raise exceptions.DamagedOrUnusualFileException( 'Could not find video information!' )
+        raise exceptions.Damaged_Or_Unusual_File_Exception( 'Could not find video information!' )
         
     
     return lines_video[0]
@@ -77,7 +77,7 @@ def parse_ffmpeg_video_format( lines ) -> tuple:
         
         line = parse_ffmpeg_video_line( lines )
         
-    except exceptions.UnsupportedFileException:
+    except exceptions.Unsupported_File_Exception:
         
         return ( False, 'unknown' )
         
@@ -98,7 +98,7 @@ def parse_ffmpeg_has_video( lines ) -> bool:
         
         parse_ffmpeg_video_line( lines )
         
-    except exceptions.UnsupportedFileException:
+    except exceptions.Unsupported_File_Exception:
         
         return False
         
@@ -124,7 +124,7 @@ def parse_ffmpeg_mime_text( lines ):
         
     except:
         
-        raise exceptions.DamagedOrUnusualFileException( 'Error reading file type!' )
+        raise exceptions.Damaged_Or_Unusual_File_Exception( 'Error reading file type!' )
     
 
 
@@ -134,7 +134,7 @@ def check_ffmpeg_error( lines ):
     
     if len( lines ) == 0:
         
-        raise exceptions.DamagedOrUnusualFileException( 'Could not parse that file--no FFMPEG output given.' )
+        raise exceptions.Damaged_Or_Unusual_File_Exception( 'Could not parse that file--no FFMPEG output given.' )
         
     
     if "No such file or directory" in lines[-1]:
@@ -144,7 +144,7 @@ def check_ffmpeg_error( lines ):
     
     if 'Invalid data' in lines[-1]:
         
-        raise exceptions.DamagedOrUnusualFileException( 'FFMPEG could not parse.' )
+        raise exceptions.Damaged_Or_Unusual_File_Exception( 'FFMPEG could not parse.' )
         
 
 
@@ -220,7 +220,7 @@ def get_ffmpeg_info_lines( path, count_frames_manually = False, only_first_secon
     
     if len( data_bytes ) == 0:
         
-        raise Exception( 'Cannot interact with video because FFMPEG did not return any content.' )
+        raise exceptions.Data_Missing( 'Cannot interact with video because FFMPEG did not return any content.' )
         
     
     del process
@@ -235,11 +235,8 @@ def get_ffmpeg_info_lines( path, count_frames_manually = False, only_first_secon
     
 
 
+def get_video_mime_from_ffmpeg_lines( lines ):
 
-def get_video_mime( path ):
-    
-    lines = get_ffmpeg_info_lines( path )
-    
     try:
         
         mime_text = parse_ffmpeg_mime_text( lines )
@@ -380,3 +377,64 @@ def get_video_mime( path ):
     
     return MT.APPLICATION_UNKNOWN
     
+
+
+
+def get_video_mime( path ):
+    
+    lines = get_ffmpeg_info_lines( path )
+
+    return get_video_mime_from_ffmpeg_lines( lines )
+    
+
+
+    
+def get_video_information_from_ffmpeg_lines( lines ):
+
+    has_video, video_format = parse_ffmpeg_video_format( lines )
+    has_audio, audio_format = parse_ffmpeg_audio( lines )
+
+    vinfo = {
+        "mime" : get_video_mime_from_ffmpeg_lines( lines ),
+        "has_video" : has_video,
+        "video_format" : video_format,
+
+        "has_audio" : has_audio,
+        "audio_format" : audio_format
+    }
+
+    return vinfo
+
+
+
+
+def split_video(video_path : str, output_directory : str, segment_size : int = 6) -> str:
+    """ process the given video creating an m3u8 files ready for hls, returns the m3u8 path"""
+
+    ff_args = [C.FFMPEG_PATH, '-y', '-v', 'error',
+                '-i', video_path, 
+                '-c:v', 'libx264',
+                '-c:a','aac', '-ac', '2',
+                '-preset','veryfast',
+                '-f', 'hls', '-hls_time', str(segment_size),
+                '-hls_playlist_type','event', # unsure what i want this to be https://www.rfc-editor.org/rfc/rfc8216#section-4.3.1.1
+                                              # ctrl + f EXT-X-PLAYLIST-TYPE
+                '-hls_list_size', '0',
+                os.path.join(output_directory, '0')]
+
+
+    process = subprocess.Popen( ff_args, bufsize = 10**5, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+    
+    ( stdout, stderr ) = util.subprocess_communicate( process )
+    
+    data_bytes = stderr
+    
+    if len( data_bytes ) != 0:
+        
+        raise exceptions.FFMPEG_Exception( non_failing_unicode_decode( data_bytes, 'utf-8' ) )
+        
+    
+    del process
+    
+    return os.path.join(output_directory, '0')
+

@@ -4,7 +4,8 @@ from .. import exceptions
 from .. import constants_ as C
 from ..constants_ import mime_types as MT 
 
-from .video_handling import get_video_mime
+from . import video_handling
+from . import audio_handling
 
 import os.path
 
@@ -37,7 +38,7 @@ def get_mime(path : str) -> int:
             
             if mime in ( MT.UNDETERMINED_VIDEO_WM, MT.UNDETERMINED_VIDEO_MP4 ):
                 
-                return get_video_mime( path )
+                return video_handling.get_video_mime( path )
                 
             # # i don't really care for animated png, but i'm leaving this here if i need it later
             # if mime == C.UNDETERMINED_PNG:
@@ -58,7 +59,7 @@ def get_mime(path : str) -> int:
     
     try:
         
-        mime = get_video_mime( path )
+        mime = video_handling.get_video_mime( path )
         
         if mime != MT.APPLICATION_UNKNOWN:
             

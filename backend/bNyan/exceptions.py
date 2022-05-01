@@ -66,7 +66,7 @@ API_406_PASSWORD_EXCEPTION = HTTPException(
 
 
 
-class NyanException( Exception ):
+class Nyan_Exception( Exception ):
     """ base exceptions """
 
     def __str__( self ):
@@ -90,15 +90,34 @@ class NyanException( Exception ):
         return os.linesep.join( s )
         
 
-class UnsupportedFileException(NyanException):
+class Unsupported_File_Exception(Nyan_Exception):
     """ unsupported file """
 
-class ZeroSizeFileException( UnsupportedFileException ): 
+class Zero_Size_File_Exception( Unsupported_File_Exception ): 
     """ file has 0 length """
 
-class DamagedOrUnusualFileException( UnsupportedFileException ): 
+class Damaged_Or_Unusual_File_Exception( Unsupported_File_Exception ): 
     """ the file is damaged """
 
 
-class FFMPEGRequiredException(NyanException):
+class FFMPEG_Required_Exception(Nyan_Exception):
     """ ffmpeg is required to parse the data (this is called when checking file types, it means the file must be downloaded to determine the type) """
+
+
+
+class FFMPEG_Exception(Nyan_Exception):
+    """ raised when ffmpeg throws an error"""
+
+class FFPROBE_Exception(Nyan_Exception):
+    """ raised when ffprobe throws an error"""
+
+
+class Data_Missing(Nyan_Exception):
+    """ raised when there is no data """
+
+
+class Thread_Exists_Exception(Nyan_Exception):
+    """ raised when trying to create a thread with the same name as an existing thread """
+
+class Thread_Does_Not_Exists_Exception(Nyan_Exception):
+    """ raised when trying to access a thread that doesn't exist """

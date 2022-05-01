@@ -15,6 +15,8 @@ from . import constants_
 from . import auth 
 from . import util 
 from . import bn_logging
+from . import config
+from . import threading_
 
 import hashlib
 
@@ -131,8 +133,25 @@ def main():
 
     LOGGER.info("=" * 128)
     LOGGER.info("Starting...")
-    LOGGER.info("Creating static paths...")
+    
+    LOGGER.info("Loading main config...")
+    config.load(constants_.MAIN_CONFIG)
 
+
+    server_ip   = config.get((), "server_ip", None)
+    port_number = config.get((), "port", None)
+    server_address = "{}:{}".format(server_ip, port_number)
+
+    if server_ip is None:
+        raise Exception("Server IP must be set in {}", constants_.MAIN_CONFIG)
+
+    if port_number is None:
+        raise Exception("Port number must be set in {}", constants_.MAIN_CONFIG)
+
+    config.set((), "server_address", server_address)
+
+
+    LOGGER.info("Creating static paths...")
     util.create_directory(constants_.STATIC_VIDEO_PATH)
     util.create_directory(constants_.STATIC_IMAGE_PATH)
     util.create_directory(constants_.STATIC_M3U8_PATH)
@@ -144,10 +163,29 @@ def main():
     LOGGER.info("Creating database tables.")
     database.Base.metadata.create_all()
 
-    LOGGER.info("Running app...")
-    uvicorn.run(app, host="0.0.0.0", port=721)
+    threading_.spawn_worker_thread(constants_.THREAD_FFMPEG, lambda x : None)
+
+    LOGGER.info("Running app -> http://{}/".format(server_address))
+    uvicorn.run(app, host="0.0.0.0", port=port_number)
+
+    threading_.cleanup_all_threads()
 
     return 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def m3u8_test():
 

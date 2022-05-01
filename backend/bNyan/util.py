@@ -70,6 +70,8 @@ def rename_file(filename : str, new_filename : str, *, replace : bool = False) -
     replace : bool - should any existing files be deleted/replaced by the given file
 
     returns True if the file was renamed otherwise False 
+
+    TODO: make this temp delete the replace file so that if the rename fails after it can be restored 
     """
 
     if not new_filename:

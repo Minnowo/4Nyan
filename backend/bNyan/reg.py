@@ -23,3 +23,5 @@ HAS_INVALID_PASSWORD_CHARACTERS = compile(r"[^a-zA-Z0-9\-\_\!\@\#\$\%\^\&\*\(\)\
 HAS_INVALID_USERNAME_CHARACTERS = compile(r"[^a-zA-Z0-9\-\_\.]")
 
 IS_HEXADECIMAL = compile(r"^(?:0[xX])?([a-fA-F0-9]+)$")
+
+IS_TS_FILENAME = compile(r"^\d+\.ts")
