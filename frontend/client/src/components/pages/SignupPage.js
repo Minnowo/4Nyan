@@ -58,7 +58,7 @@ export default function RegisterPage(props)
             if (!response.user_id)
                 return;
 
-            console.log("user created");
+            window.location.href = "/";
         };
     }
 

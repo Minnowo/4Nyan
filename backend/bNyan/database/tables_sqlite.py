@@ -28,8 +28,8 @@ class TBL_Hash(Base):
     width     = Column(Integer)
     height    = Column(Integer)
     duration  = Column(Integer)
-    num_words = Column(Integer)
     has_audio = Column(Boolean)
+    date_added= Column(TIMESTAMP(timezone=True))
 
 
 class TBL_Tags(Base):

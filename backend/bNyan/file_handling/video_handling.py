@@ -1,4 +1,5 @@
 
+from distutils import extension
 from .. import exceptions
 from .. import util 
 
@@ -68,6 +69,27 @@ def parse_ffmpeg_video_line( lines, png_ok = False ):
     return lines_video[0]
 
 
+def parse_ffmpeg_video_dimensions( lines) -> tuple:
+    """ returns the width and height of found video stream otherwise (-1, -1)"""
+    
+    try:
+        
+        line = parse_ffmpeg_video_line( lines) 
+
+    except exceptions.Unsupported_File_Exception:
+
+        return (-1, -1)
+
+#  Stream #0:0(und): Video: h264 (Constrained Baseline) (avc1 / 0x31637661), yuv420p, 480x360 [SAR 1:1 DAR 4:3], 260 kb/s, 30 fps, 30 tbr, 15360 tbn, 60 tbc (default)
+
+    match = search(r",\s([1-9]\d+)[xX]([1-9]\d+)", line)
+
+    if not match:
+
+        return (-1, -1)
+
+    return (int(match.group(1)), int(match.group(2)))
+
 
 
 def parse_ffmpeg_video_format( lines ) -> tuple:
@@ -80,8 +102,7 @@ def parse_ffmpeg_video_format( lines ) -> tuple:
     except exceptions.Unsupported_File_Exception:
         
         return ( False, 'unknown' )
-        
-    
+
     match = search( r"(?<=Video:\s).+?(?=,)", line )
 
     if not match:
@@ -394,13 +415,19 @@ def get_video_information_from_ffmpeg_lines( lines ):
     has_video, video_format = parse_ffmpeg_video_format( lines )
     has_audio, audio_format = parse_ffmpeg_audio( lines )
 
+    width, height = parse_ffmpeg_video_dimensions( lines )
+
     vinfo = {
         "mime" : get_video_mime_from_ffmpeg_lines( lines ),
+
         "has_video" : has_video,
         "video_format" : video_format,
 
         "has_audio" : has_audio,
-        "audio_format" : audio_format
+        "audio_format" : audio_format,
+
+        "width" : width ,
+        "height" : height 
     }
 
     return vinfo

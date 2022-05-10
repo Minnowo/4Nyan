@@ -12,6 +12,13 @@ import "../../css/global.css"
 import API_ENDPOINTS from '../../constant';
 
 
+// TODO: 
+// add a checkbox "make this a gallery" which creates a database group and keeps the file order 
+// add a drop down for category, (manga, image set, book, tv series...) 
+// make an endpoint which supports these
+
+
+
 export default function UploadPage(props)
 {
     const { cookies } = props;
@@ -19,7 +26,7 @@ export default function UploadPage(props)
     const [files       , setFiles  ] = React.useState([]);
     const [filePreviews, setPreview] = React.useState([]);
     const [messageBox  , setMessage] = React.useState([]);
-    
+
     const [uploadProgress, setProgress] = React.useState("");
 
     const fileUpload = React.useRef("");

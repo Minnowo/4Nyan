@@ -16,6 +16,7 @@ manager = LoginManager(SECRET, token_url='/auth/token')
 
 def verify_password(password : str, hashed_password : str, *, pepper : str = PEPPER) -> bool:
     """ validates if the given password is a match for the given hash, returns bool """
+    
     if isinstance(password, str):
         password = password.encode()
 

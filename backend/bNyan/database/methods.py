@@ -14,11 +14,15 @@ from ..reg import HAS_INVALID_PASSWORD_CHARACTERS, HAS_INVALID_USERNAME_CHARACTE
 
 from datetime import datetime 
 
+from sqlalchemy import select, and_, or_
+
+# https://docs.sqlalchemy.org/en/14/orm/session_basics.html
 
 # User ---------------------------------------------------
 
 
-def create_user(user : models.UserIn) -> dict:
+
+def create_user(user : models.UserIn) -> models.User:
     """ creates a user in the database, returns a dict with the user info """
 
     username_length = len(user.username)
@@ -59,11 +63,11 @@ def create_user(user : models.UserIn) -> dict:
         # but this commits to the database so good enough
         session.flush()        
         
-        return {
-            "user_id"    : new_user.user_id,
-            "username"   : new_user.username,
-            "created_at" : new_user.created_at
-        }
+        return models.User(
+                user_id         = new_user.user_id,
+                username        = new_user.username,
+                create_at       = new_user.created_at
+            )
 
 
 def get_user(username : str) -> models.UserAuthIn:
@@ -101,8 +105,8 @@ def get_file_by_hash(hash : bytes) ->models.File:
                 width     = result.width,
                 height    = result.height,
                 duration  = result.duration,
-                num_words = result.num_words,
-                has_audio = result.has_audio
+                has_audio = result.has_audio,
+                date_added = result.date_added
             )
 
 def get_file_by_id(hash_id : int) -> models.File:
@@ -115,18 +119,20 @@ def get_file_by_id(hash_id : int) -> models.File:
             return None 
 
         return models.File(
-                hash_id   = result.hash_id,
-                hash      = result.hash,
-                size      = result.size,
-                mime      = result.mime,
-                width     = result.width,
-                height    = result.height,
-                duration  = result.duration,
-                num_words = result.num_words,
-                has_audio = result.has_audio
+                hash_id    = result.hash_id,
+                hash       = result.hash,
+                size       = result.size,
+                mime       = result.mime,
+                width      = result.width,
+                height     = result.height,
+                duration   = result.duration,
+                has_audio  = result.has_audio,
+                date_added = result.date_added
             )
 
+
 def remove_file(hash : bytes):
+    """ removes the file from the database, returns True if the file is not found or removed """
     with Session.begin() as session:
 
         result = session.query(TBL_Hash).filter_by(hash = hash).first()
@@ -140,7 +146,8 @@ def remove_file(hash : bytes):
         return True 
 
 
-def add_file(file : models.File):
+def add_file(file : models.File) -> None:
+    """ adds a file to the database and sets the hash_id in the given file object """
 
     # pain. this makes intelisense break even tho it's the same as the Session class 
     with Session.begin() as session:
@@ -151,14 +158,14 @@ def add_file(file : models.File):
             raise exceptions.API_409_FILE_EXISTS_EXCEPTION 
         
         new_file = TBL_Hash(
-                            hash      = file.hash,
-                            size      = file.size,
-                            mime      = file.mime,
-                            width     = file.width,
-                            height    = file.height,
-                            duration  = file.duration,
-                            num_words = file.num_words,
-                            has_audio = file.has_audio
+                            hash       = file.hash,
+                            size       = file.size,
+                            mime       = file.mime,
+                            width      = file.width,
+                            height     = file.height,
+                            duration   = file.duration,
+                            has_audio  = file.has_audio,
+                            date_added = datetime.now().astimezone()
                         ) 
         
         session.add(new_file)
@@ -168,42 +175,49 @@ def add_file(file : models.File):
         # but this commits to the database so good enough
         session.flush()        
         
-        return {
-            "hash_id"   : new_file.hash_id,
-            "hash"      : new_file.hash,
-            "size"      : new_file.size,
-            "mime"      : new_file.mime,
-            "width"     : new_file.width,
-            "height"    : new_file.height,
-            "duration"  : new_file.duration,
-            "num_words" : new_file.num_words,
-            "has_audio" : new_file.has_audio
-        }
+        file.hash_id = new_file.hash_id
 
 
+sort_by_map = [ 
+    TBL_Hash.hash_id,
+    TBL_Hash.hash,
+    TBL_Hash.size,
+    TBL_Hash.mime
+]
 
+def search_files(search : models.FileSearch):
+    """ searches the database with the given params """
 
-def add_file_to_database(sha256 : bytes, file_size : int, mime : int):
+    with Session.begin() as session:
+       
+        result = session.query(TBL_Hash)
 
-    # generate a file model to add the file into the database 
-    db_file = models.File(
-        hash=sha256, 
-        size=file_size, 
-        mime=mime, 
-        width=0, 
-        height=0, 
-        duration=0, 
-        num_words=0, 
-        has_audio=False)
+        if search.hash_ids:
 
-    try:
+            result = result.filter(TBL_Hash.hash_id.in_(search.hash_ids))
+
+        if search.hashes:
+
+            result = result.filter(TBL_Hash.hash.in_(search.hashes))
+
+        if search.sort_asc:
+            
+            order = sort_by_map[search.sort_type].asc()
         
-        # will throw an exception if the file is in the database 
-        add_file(db_file)
+        else:
 
-    except HTTPException as e:
-        
-        LOGGER.warning("error thrown adding file to the database -> {}".format(e))
+            order = sort_by_map[search.sort_type].desc()
 
-        util.remove_file(tempname) # delete the temp file 
-        raise e 
+        for r in result.order_by(order).all():
+
+            yield models.File_JSON_Safe(
+                hash_id    = r.hash_id,
+                hash       = r.hash.hex(),
+                size       = r.size,
+                mime       = r.mime,
+                width      = r.width,
+                height     = r.height,
+                duration   = r.duration,
+                has_audio  = r.has_audio,
+                date_added = r.date_added
+            )

@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
-
+from typing import List, Optional
+from fastapi import Query
 ######## Auth ########
 
 
@@ -12,24 +13,50 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: str = None
 
+######## Files ########
 
 class File(BaseModel):
-    hash_id   : int = None
-    hash      : bytes
-    size      : int
-    mime      : int
-    width     : int  
-    height    : int  
-    duration  : int  
-    num_words : int 
-    has_audio : bool
+    hash_id    : int = None
+    hash       : bytes
+    size       : int
+    mime       : int
+    width      : int  
+    height     : int  
+    duration   : int  
+    has_audio  : bool
+    date_added : datetime = None
+
+class File_JSON_Safe(BaseModel):
+    hash_id    : int = None
+    hash       : str
+    size       : int
+    mime       : int
+    width      : int  
+    height     : int  
+    duration   : int  
+    has_audio  : bool
+    date_added : datetime = None
+
+
+
+class FileSearch(BaseModel):
+
+    sort_asc  : bool = True 
+    sort_type : int = 0
+
+    hash_ids  : List[int] = Query(None )
+    hashes    : List[str] = Query(None )
+
+    tag_names : List[str] = Query(None )
+    tag_ids   : List[int] = Query(None )
+
 
 ######## User ########
 
 class User(BaseModel):
-    user_id   : int = None
-    username  : str
-    create_at : datetime = None
+    user_id    : int = None
+    username   : str
+    create_at  : datetime = None
 
 
 class UserIn(User):

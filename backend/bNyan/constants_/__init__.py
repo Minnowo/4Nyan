@@ -81,8 +81,8 @@ PEPPER = "UEZ5V_HewsMowePwdLenthUWU__ooZqe"
 SALT_ROUNDS = 14
 SALT_PREFIX = b"2b" # needs to be 2b or 2a 
 
-SECRET = "9ffd8b7c514f2009eaf299f3df6dcc76a788c9518941db4dd077656b92996bf3"
-
+# SECRET = "9ffd8b7c514f2009eaf299f3df6dcc76a788c9518941db4dd077656b92996bf3"
+SECRET = os.urandom(128).hex()
 
 ######## Other ########
 
@@ -111,20 +111,6 @@ RESTRICT_MAP_NO_SEP = {
 # AC-3                  [AC_3]
 # Enhanced AC-3         [AC_3]
 
-
-AUDIO_CODEC_ACC = 55
-AUDIO_CODEC_MP3 = 56
-AUDIO_CODEC_AC_3 = 57
-
-HLS_SUPPORTED_AUDIO_CODECS = [AUDIO_CODEC_ACC, AUDIO_CODEC_MP3, AUDIO_CODEC_AC_3]
-
-AUDIO_CODEC_AAC_FFMPEG_LINE = "aac (LC) (mp4a / 0x6134706D)"
-
-audio_codec_map = {
-    AUDIO_CODEC_ACC : "aac (LC)",
-    AUDIO_CODEC_MP3 : "mp3",
-    AUDIO_CODEC_AC_3 : "ac",
-}
 
 
 mime_ext_lookup = {

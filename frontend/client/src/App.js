@@ -2,8 +2,9 @@ import React, { Component } from 'react';
 import {BrowserRouter as Router,Routes,Route} from "react-router-dom";
 import Cookies from 'universal-cookie';
 
-import Default from './components/pages/Default';
+import { ROUTES } from './constant';
 
+import Default from './components/pages/Default';
 import WatchPage from './components/pages/WatchPage';
 import LoginPage from './components/pages/LoginPage';
 import RegisterPage from './components/pages/SignupPage';
@@ -19,12 +20,12 @@ export default function App()
     return (
       <Router>
         <Routes>
-        <Route path="/" element={<Default {...state} />}></Route>
-        <Route path="/home" element={<Default {...state}/>}></Route>
-        <Route path="/watch" element={<WatchPage {...state}/>}></Route>
-        <Route path="/login" element={<LoginPage {...state}/>}></Route>
-        <Route path="/register" element={<RegisterPage {...state}/>}></Route>
-        <Route path="/upload" element={<UploadPage {...state}/>}></Route>
+        <Route path={ROUTES.default} element={<Default {...state} />}></Route>
+        <Route path={ROUTES.home} element={<Default {...state}/>}></Route>
+        <Route path={ROUTES.watch} element={<WatchPage {...state}/>}></Route>
+        <Route path={ROUTES.login} element={<LoginPage {...state}/>}></Route>
+        <Route path={ROUTES.register} element={<RegisterPage {...state}/>}></Route>
+        <Route path={ROUTES.upload} element={<UploadPage {...state}/>}></Route>
         </Routes>
       </Router>
     );

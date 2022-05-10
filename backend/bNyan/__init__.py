@@ -1,10 +1,15 @@
 
 
 import os 
-from fastapi import FastAPI, Request, Depends, File, UploadFile
+from fastapi import FastAPI, Request, Depends, File, UploadFile, Query
 from fastapi.security import OAuth2PasswordRequestForm 
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
+
+from typing import List 
+from typing import Optional
+
+from . import file_handling
 
 from . import exceptions
 from . import methods 
@@ -60,8 +65,19 @@ async def getfile(request : Request, file_id : str = ""):
     return methods.static_lookup(file_id)
 
 
+@app.get("/search_files")
+async def search_files(request : Request, sort_type : int = 0, sort_asc : bool = True, hash_ids : List[int] = Query(None)):
+    
+    search = models.FileSearch()
+    search.sort_type = sort_type
+    search.sort_asc = sort_asc
+    search.hash_ids = hash_ids
+    
+    return [file for file in database.Methods.search_files(search)]
+
+
 @app.post("/create/file")
-async def create_item(request : Request, data: UploadFile = File(...) ): #, user = Depends(auth.manager)):
+async def create_item(request : Request, data: UploadFile = File(...), user = Depends(auth.manager)):
 
     data_size = util.parse_int(request.headers.get('content-length', None), None)
 
@@ -163,12 +179,19 @@ def main():
     LOGGER.info("Creating database tables.")
     database.Base.metadata.create_all()
 
-    threading_.spawn_worker_thread(constants_.THREAD_FFMPEG, lambda x : None)
+    try:
+        threading_.spawn_worker_thread(constants_.THREAD_FFMPEG, lambda x : None)
 
-    LOGGER.info("Running app -> http://{}/".format(server_address))
-    uvicorn.run(app, host="0.0.0.0", port=port_number)
+        LOGGER.info("Running app -> http://{}/".format(server_address))
+        
+        uvicorn.run(app, host="0.0.0.0", port=port_number)
 
-    threading_.cleanup_all_threads()
+    except Exception as e:
+        LOGGER.critical(e.__repr__())
+
+    finally:
+        threading_.cleanup_all_threads()
+
 
     return 0
 

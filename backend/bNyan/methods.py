@@ -4,6 +4,7 @@ import hashlib
 from fastapi.responses import FileResponse
 from fastapi import Response, UploadFile, HTTPException, Request
 
+
 from .constants_ import mime_types as MT 
 
 from . import threading_
@@ -18,6 +19,14 @@ from . import bn_logging
 from . import config 
 
 LOGGER = bn_logging.get_logger(constants_.BNYAN_METHODS[0], constants_.BNYAN_METHODS[1])
+
+try:
+    import image_size_reader as isr
+
+except ImportError as imperr:
+
+    LOGGER.critical("image-size-reader could not be found, this module is required, install it from https://github.com/Minnowo/image-size-reader")
+
 
 def file_check(path : str, rout : str, cleans=[reg.INVALID_PATH_CHAR.sub]):
     """ checks if the given file exists in the given rout and cleans the path with the list of given regex.sub """
@@ -171,17 +180,17 @@ def static_lookup(file_hash : str):
 
 
 
-def add_file_to_database(sha256 : bytes, file_size : int, mime : int, delete_on_httperr : str):
+def add_file_to_database(sha256 : bytes, file_size : int, mime : int, delete_on_httperr : str, **kwargs):
 
     db_file = models.File(
         hash=sha256, 
         size=file_size, 
         mime=mime, 
-        width=0, 
-        height=0, 
-        duration=0, 
-        num_words=0, 
-        has_audio=False)
+        width=kwargs.get("width", 0), 
+        height=kwargs.get("height", 0), 
+        duration=kwargs.get("duration", 0), 
+        num_words=kwargs.get("num_words", 0), 
+        has_audio=kwargs.get("has_audio", False))
 
     try:
         
@@ -234,14 +243,25 @@ def process_video(data):
         writer.writelines(lines)
 
     try:
-        add_file_to_database(data["sha256_bytes"], data["file_size"], data["mime"], data["file_path"])
+        add_file_to_database(data["sha256_bytes"], data["file_size"], data["mime"], data["file_path"], **data["video_info"])
 
     except Exception as e:
 
         LOGGER.error(e)
 
 
+def add_image_to_database(sha256_bytes : bytes, file_size : int , mime : int, filename : str):
+    """ adds the image file to the database """
 
+    width, height = isr.get_image_size(filename)
+
+    kwargs = {
+        "width" : width,
+        "height" : height, 
+        "has_audio" : False,
+    }
+
+    add_file_to_database(sha256_bytes, file_size, mime, filename, **kwargs)
 
 
 
@@ -283,11 +303,16 @@ async def process_file_upload(file : UploadFile):
 
             writer.write(chunk)
 
+    await file.close()
 
     # we need to use ffmpeg to check the video
     if mime == MT.UNDETERMINED_VIDEO:
 
-        mime = file_handling.get_video_mime(tempname)
+        ffmpeg_lines = file_handling.video_handling.get_ffmpeg_info_lines(tempname)
+
+        video_info = file_handling.video_handling.get_video_information_from_ffmpeg_lines(ffmpeg_lines)
+        
+        mime = video_info["mime"]
 
         if mime == MT.APPLICATION_UNKNOWN:
 
@@ -318,13 +343,21 @@ async def process_file_upload(file : UploadFile):
     # rename the file
     if not util.rename_file(tempname, filename):
         LOGGER.warning("Cannot rename file '{0}' -> '{1}' hash '{2}' assuming file exists".format(tempname, filename, sha256_hex))
-    
+
+
+    if static_path == constants_.STATIC_IMAGE_PATH:
+
+        add_image_to_database(sha256_bytes, file_size, mime, filename)
+        return 
+
+
 
     if static_path != constants_.STATIC_VIDEO_PATH:
         
         add_file_to_database(sha256_bytes, file_size, mime, filename)
 
         return
+
 
     ts_folder = os.path.join(static_path, sha256_hex)
 
@@ -345,6 +378,7 @@ async def process_file_upload(file : UploadFile):
         "sha256_bytes" : sha256_bytes,
         "file_size"    : file_size,
         "mime"         : mime,
+        "video_info"   : video_info
     }
 
     threading_.append_worker_data(constants_.THREAD_FFMPEG, data, process_video)

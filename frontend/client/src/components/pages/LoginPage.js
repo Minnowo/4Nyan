@@ -8,6 +8,7 @@ import "../../css/global.css"
 
 import API_ENDPOINTS from '../../constant'
 import { 
+    ROUTES ,
     MAX_USERNAME_LENGTH, 
     MIN_USERNAME_LENGTH,
     MAX_PASSWORD_LENGTH,
@@ -21,16 +22,15 @@ export default function LoginPage(props)
 
     if(cookies.get("access_token"))
     {
-        window.location.href = "/";
+        window.location.href = ROUTES.home;
         return null;
     }
 
     const username = React.useRef("");
     const password = React.useRef("");
-    
+
     const nprops = {
-        brand : "~4Nyan~",
-        displayUser : cookies.get("username")
+        brand : "~4Nyan~"
     }
 
 
@@ -70,7 +70,8 @@ export default function LoginPage(props)
             });
             cookies.set("access_token", response.access_token);
             cookies.set("token_type", response.token_type);
-            window.location.href = "/login";
+
+            window.location.href = ROUTES.home;
         };
     }
 

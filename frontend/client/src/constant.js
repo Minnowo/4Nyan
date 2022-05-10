@@ -11,6 +11,15 @@ const API_ENDPOINTS = {
     }
 };
 
+export const ROUTES = {
+        default  : "/",
+        home     : "/home",
+        watch    : "/watch",
+        login    : "/login",
+        register : "/register",
+        upload   : "/upload",
+}
+
 export const MAX_PASSWORD_LENGTH = 96;
 export const MIN_PASSWORD_LENGTH = 1;
 
