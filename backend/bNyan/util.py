@@ -93,6 +93,19 @@ def rename_file(filename : str, new_filename : str, *, replace : bool = False) -
         return False 
 
 
+def combine_dict(a, b):
+    """Recursively combine the contents of 'b' into 'a'"""
+
+    for key, value in b.items():
+
+        if key in a and isinstance(value, dict) and isinstance(a[key], dict):
+            combine_dict(a[key], value)
+            
+        else:
+            a[key] = value
+
+    return a
+
 
 def iter_file(file, chunk_size : int = 262144): # 256kb 
     """    takes a file handle and yields it in blocks    """

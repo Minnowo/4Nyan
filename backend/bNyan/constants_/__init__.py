@@ -22,12 +22,20 @@ MAX_IMG_PATH_LENGTH = 100
 MIN_IMG_PATH_LENGTH = 3
 
 
+STATIC_FAVICON_PATH = os.path.join("static", "favicon.ico")
 STATIC_IMAGE_PATH = os.path.join("static", "i")
 STATIC_VIDEO_PATH = os.path.join("static", "v")
 STATIC_M3U8_PATH  = os.path.join("static", "m3u8")
 STATIC_TEMP_PATH  = os.path.join("static", "tmp")
 STATIC_AUDIO_PATH = os.path.join("static", "a")
-STATIC_LOG_PATH = os.path.join("static", "logs")
+STATIC_LOG_PATH   = os.path.join("static", "logs")
+
+STATIC_IMAGE_ROUTE = STATIC_IMAGE_PATH.replace("\\", "/")
+STATIC_VIDEO_ROUTE = STATIC_VIDEO_PATH.replace("\\", "/")
+STATIC_M3U8_ROUTE  = STATIC_M3U8_PATH.replace("\\", "/")
+STATIC_AUDIO_ROUTE = STATIC_AUDIO_PATH.replace("\\", "/")
+
+
 
 DATABASE_FOLDER = os.path.join("db")
 DATABASE_PATH = os.path.join(DATABASE_FOLDER, "master.data.db")

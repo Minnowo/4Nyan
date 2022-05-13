@@ -64,6 +64,7 @@ export default function UploadPage(props)
             return; 
 
         let message = []
+        let flag = false;
         for(let f of files)
         {
             const upload_endpoint = API_ENDPOINTS.backend_ref + API_ENDPOINTS.upload_file;
@@ -83,7 +84,18 @@ export default function UploadPage(props)
             
             await postData(upload_endpoint, data, headers, progress)
                 .then(e    => message.push(<div style={{color:"green"}} key={f.name}>{f.name}: {e.status}</div>))
-                .catch(err => message.push(<div style={{color:"red"}}   key={f.name}>{f.name}: {err.status}</div>));
+                .catch(err => 
+                    { 
+                        message.push(<div style={{color:"red"}}   key={f.name}>{f.name}: {err.status}</div>);
+
+                        if(err.status === 401)
+                        {
+                            flag = true;
+                        }
+                    });
+
+            if(flag)
+                break;
         }
         
         setMessage(message);

@@ -5,7 +5,7 @@ import "../../css/global.css"
 
 export default function FileUpload(props)
 {
-    const { image, caption, type  } = props;
+    const { image, caption, style  } = props;
 
     function imgError(image) 
     {
@@ -27,8 +27,8 @@ export default function FileUpload(props)
     }
 
     return (
-        <div className="file-container">
-                <img src={image} width={"100%"} onError={imgError}/>
+        <div className="file-container" style={style} loading="lazy">
+                <img src={image} width={"100%"} onError={imgError} loading="lazy" />
                 <div className="caption">{caption}</div>
         </div>
     )

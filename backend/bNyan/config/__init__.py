@@ -76,7 +76,7 @@ def save(path = constants_.MAIN_CONFIG, sub = None, *, conf = _config):
         except:pass 
 
     with open(path, "w") as f:
-        json.dump(util.replace_set_list(conf), f, indent = 3)
+        json.dump(conf, f, indent = 3)
 
 
 def clear():

@@ -182,7 +182,11 @@ sort_by_map = [
     TBL_Hash.hash_id,
     TBL_Hash.hash,
     TBL_Hash.size,
-    TBL_Hash.mime
+    TBL_Hash.mime,
+    TBL_Hash.date_added,
+    TBL_Hash.width,
+    TBL_Hash.height,
+    TBL_Hash.duration
 ]
 
 def search_files(search : models.FileSearch):
@@ -201,18 +205,19 @@ def search_files(search : models.FileSearch):
             result = result.filter(TBL_Hash.hash.in_(search.hashes))
 
         if search.sort_asc:
-            
-            order = sort_by_map[search.sort_type].asc()
+
+            # % prevents index err
+            order = sort_by_map[search.sort_type % len(sort_by_map)].asc()
         
         else:
 
-            order = sort_by_map[search.sort_type].desc()
+            order = sort_by_map[search.sort_type % len(sort_by_map)].desc()
 
         for r in result.order_by(order).all():
 
-            yield models.File_JSON_Safe(
+            yield models.File_Response(
                 hash_id    = r.hash_id,
-                hash       = r.hash.hex(),
+                hash       = r.hash,
                 size       = r.size,
                 mime       = r.mime,
                 width      = r.width,

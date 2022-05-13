@@ -8,6 +8,9 @@ const API_ENDPOINTS = {
         video : "static/v/",
         image : "static/i/",
         m38u  : "static/m3u8/",
+    },
+    search : {
+        get_files : "search/get_files",
     }
 };
 

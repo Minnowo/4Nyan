@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 from fastapi import Query
 ######## Auth ########
 
@@ -17,7 +17,7 @@ class TokenData(BaseModel):
 
 class File(BaseModel):
     hash_id    : int = None
-    hash       : bytes
+    hash       : Union[bytes, str]
     size       : int
     mime       : int
     width      : int  
@@ -26,16 +26,10 @@ class File(BaseModel):
     has_audio  : bool
     date_added : datetime = None
 
-class File_JSON_Safe(BaseModel):
-    hash_id    : int = None
-    hash       : str
-    size       : int
-    mime       : int
-    width      : int  
-    height     : int  
-    duration   : int  
-    has_audio  : bool
-    date_added : datetime = None
+
+class File_Response(File):
+
+    static_url : str = None 
 
 
 

@@ -2,7 +2,7 @@
 
 
 
-function getData(url, data, headers = {}, progress = null) 
+export function getData(url, headers = {}) 
 {
     // blessed promise so you can await this qt
     return new Promise(function (resolve, reject) 
@@ -11,14 +11,11 @@ function getData(url, data, headers = {}, progress = null)
         
         xhr.open('GET', url, true);
 
-        // set request headers given
+        // // set request headers given
         Object.keys(headers).map((key) => 
         {
             xhr.setRequestHeader(key, headers[key]);
         });
-
-        // set update handler 
-        xhr.upload.onprogress = progress;
 
         // handle resolve and reject
         xhr.onload = function () 
@@ -35,7 +32,7 @@ function getData(url, data, headers = {}, progress = null)
             }
         };
 
-        xhr.send(data);
+        xhr.send();
     });
 }
 

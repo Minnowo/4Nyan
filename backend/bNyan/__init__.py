@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request, Depends, File, UploadFile, Query
 from fastapi.security import OAuth2PasswordRequestForm 
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from typing import List 
 from typing import Optional
@@ -54,6 +55,7 @@ app.add_middleware(
 @app.get('/get_file')
 async def getfile(request : Request, file_id : str = ""):
     
+    raise exceptions.API_404_NOT_FOUND_EXCEPTION
 
     if not file_id:
         raise exceptions.API_400_BAD_REQUEST_EXCEPTION
@@ -65,15 +67,42 @@ async def getfile(request : Request, file_id : str = ""):
     return methods.static_lookup(file_id)
 
 
-@app.get("/search_files")
-async def search_files(request : Request, sort_type : int = 0, sort_asc : bool = True, hash_ids : List[int] = Query(None)):
+@app.get("/search/get_files")
+async def search_files(request : Request, sort_type : int = 4, sort_asc : bool = False, hash_ids : List[int] = Query(None)):
+
+    htag = request.headers.get("content_tag", None)
+    etag = config.get((), "content_tag")
     
+    if htag:
+
+        if htag == etag:
+            print("Cache hit")
+            return {}
+
     search = models.FileSearch()
     search.sort_type = sort_type
     search.sort_asc = sort_asc
     search.hash_ids = hash_ids
     
-    return [file for file in database.Methods.search_files(search)]
+    files = [ ]
+    for file in database.Methods.search_files(search):
+
+        # convert the hash to hex so it's json safe 
+        file.hash = file.hash.hex()
+
+        # builds the static url,
+        # 'http://' + '0.0.0.0:700' + '/' + 'static/i' + 'filename' + '.ext'
+        file.static_url = "http://" + config.get((), "server_address") + "/" + \
+                         methods.get_static_route_from_mime(file.mime) + "/" + \
+                         file.hash + constants_.mime_ext_lookup.get(file.mime, "") 
+        
+        files.append(file)
+        
+
+    return {
+        "content_tag" : etag,
+        "content" : files 
+    }
 
 
 @app.post("/create/file")
@@ -89,6 +118,8 @@ async def create_item(request : Request, data: UploadFile = File(...), user = De
         raise exceptions.API_400_BAD_FILE_EXCEPTION
 
     await methods.process_file_upload(data)
+
+    config.set((), "content_tag", os.urandom(32).hex())
     
     return True 
 
@@ -143,6 +174,13 @@ async def staticv1(category: str, path: str, request : Request, ts : str = ""):
 
     return cat(path, request)
 
+@app.get('/favicon.ico')
+async def favicon():
+    
+    if(os.path.isfile(constants_.STATIC_FAVICON_PATH)):
+        return FileResponse(constants_.STATIC_FAVICON_PATH)
+
+    raise exceptions.API_404_NOT_FOUND_EXCEPTION
 
 def main():
     import uvicorn
@@ -159,12 +197,16 @@ def main():
     server_address = "{}:{}".format(server_ip, port_number)
 
     if server_ip is None:
-        raise Exception("Server IP must be set in {}", constants_.MAIN_CONFIG)
+        raise Exception("Server IP must be set in {} -> 'server_ip' : '0.0.0.0'".format(constants_.MAIN_CONFIG))
 
     if port_number is None:
-        raise Exception("Port number must be set in {}", constants_.MAIN_CONFIG)
+        raise Exception("Port number must be set in {} -> 'port' : 721".format(constants_.MAIN_CONFIG))
 
     config.set((), "server_address", server_address)
+
+    if not config.get((), "content_tag", None):
+
+        config.set((), "content_tag", os.urandom(32).hex())
 
 
     LOGGER.info("Creating static paths...")
@@ -190,8 +232,10 @@ def main():
         LOGGER.critical(e.__repr__())
 
     finally:
+
         threading_.cleanup_all_threads()
 
+        config.save(constants_.MAIN_CONFIG)
 
     return 0
 

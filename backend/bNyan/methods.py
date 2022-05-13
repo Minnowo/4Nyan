@@ -51,6 +51,19 @@ def file_check(path : str, rout : str, cleans=[reg.INVALID_PATH_CHAR.sub]):
     return path 
 
 
+def get_static_route_from_mime(mime : int):
+    """ returns the static route where a file should be accessed via the static url from the given mime type """
+    
+    if mime in MT.IMAGE_MIMES:
+        return constants_.STATIC_IMAGE_ROUTE
+
+    if mime in MT.VIDEO_MIMES:
+        return constants_.STATIC_VIDEO_ROUTE
+
+    if mime in  MT.AUDIO_MIMES:
+        return constants_.STATIC_VIDEO_ROUTE
+
+    return None 
 
 def get_static_path_from_mime(mime : int):
     """ returns the static path where a file should be stored based of the given mime type """
