@@ -92,9 +92,12 @@ async def search_files(request : Request, sort_type : int = 4, sort_asc : bool =
 
         # builds the static url,
         # 'http://' + '0.0.0.0:700' + '/' + 'static/i' + 'filename' + '.ext'
-        file.static_url = "http://" + config.get((), "server_address") + "/" + \
-                         methods.get_static_route_from_mime(file.mime) + "/" + \
-                         file.hash + constants_.mime_ext_lookup.get(file.mime, "") 
+
+        leading = "http://" + config.get((), "server_address") + "/"
+        ending  = file.hash + constants_.mime_ext_lookup.get(file.mime, "") 
+
+        file.static_url = ( leading + methods.get_static_route_from_mime(file.mime) + "/" + ending, 
+                            leading + constants_.STATIC_THUMBNAIL_ROUTE + "/" + ending )
         
         files.append(file)
         
@@ -168,9 +171,8 @@ async def staticv1(category: str, path: str, request : Request, ts : str = ""):
         raise exceptions.API_404_NOT_FOUND_EXCEPTION
 
     if ts: # should probably check category or make the function just take the ts arg 
-        ts = reg.INVALID_PATH_CHAR.sub("", ts)
 
-        return methods.get_video(os.path.join(path, ts), request)
+        return methods.get_video((path, ts), request)
 
     return cat(path, request)
 
@@ -212,17 +214,29 @@ def main():
     LOGGER.info("Creating static paths...")
     util.create_directory(constants_.STATIC_VIDEO_PATH)
     util.create_directory(constants_.STATIC_IMAGE_PATH)
+    util.create_directory(constants_.STATIC_THUMBNAIL_PATH)
     util.create_directory(constants_.STATIC_M3U8_PATH)
     util.create_directory(constants_.STATIC_TEMP_PATH)
     util.create_directory(constants_.STATIC_AUDIO_PATH)
 
     util.create_directory(constants_.BIN_FOLDER)
 
+    for i in range(0xff + 1):
+
+        f = hex(i)[2:].zfill(2)
+        
+        util.create_directory(os.path.join(constants_.STATIC_VIDEO_PATH, f))
+        util.create_directory(os.path.join(constants_.STATIC_IMAGE_PATH, f))
+        util.create_directory(os.path.join(constants_.STATIC_THUMBNAIL_PATH, f))
+        util.create_directory(os.path.join(constants_.STATIC_M3U8_PATH, f))
+        util.create_directory(os.path.join(constants_.STATIC_AUDIO_PATH, f))
+
     LOGGER.info("Creating database tables.")
     database.Base.metadata.create_all()
 
     try:
         threading_.spawn_worker_thread(constants_.THREAD_FFMPEG, lambda x : None)
+        threading_.spawn_worker_thread(constants_.THREAD_THUMBNAIL, lambda x : None)
 
         LOGGER.info("Running app -> http://{}/".format(server_address))
         

@@ -58,7 +58,7 @@ export default function LoginPage(props)
 
             console.log(response);
 
-            if (request.status != 200)
+            if (request.status !== 200)
                 return; 
 
             if (!response.access_token)

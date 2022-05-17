@@ -87,6 +87,16 @@ def get_user(username : str) -> models.UserAuthIn:
                 hashed_password = result.hashed_password
             )
 
+def file_hash_exists(hash : bytes) -> bool:
+
+    with Session.begin() as session:
+
+        result = session.query(TBL_Hash).filter_by(hash = hash).first()
+
+        if not result:
+            return False 
+
+        return True 
 
 def get_file_by_hash(hash : bytes) ->models.File:
 

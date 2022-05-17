@@ -47,7 +47,7 @@ export default function Default(props)
         await getData(get_endpoint, headers)
                 .then(e    => 
                     {
-                        if(e.status != 200)
+                        if(e.status !== 200)
                             return;
                         
                         let content = JSON.parse(e.response);
@@ -65,15 +65,19 @@ export default function Default(props)
                             console.log("cache miss");
                         }
 
+                        console.log(content.content)
+
                         let display = [];
                         const max = Math.min(content.content.length, page * 25);
-                        for(let i = max - 25; i < max; i++)
+
+                        for(let i = Math.max(max - 25, 0); i < max; i++)
                         {
-                            console.log(i);
                             const value = content.content[i];
+                            const fullUrl = value.static_url[0];
+                            const thumbUrl = value.static_url[1];
 
                             const props = {
-                                image : value.static_url,
+                                image : thumbUrl,
                                 caption : "",
                                 fileType : null ,
                                 style : {
@@ -82,8 +86,8 @@ export default function Default(props)
                             }
 
                             display.push(
-                            <a href={value.static_url} target="_blank" rel="noopener noreferrer">
-                                <FileUpload {...props} key={i}></FileUpload>
+                            <a key={i} href={fullUrl} target="_blank" rel="noopener noreferrer">
+                                <FileUpload {...props} ></FileUpload>
                             </a>);
                         }
 
@@ -100,7 +104,7 @@ export default function Default(props)
 
             <div className='container'>
                 <div className='row'>
-                    <div className='col' style={{"text-align": "right"}}>
+                    <div className='col' style={{"textAlign": "right"}}>
                         <a href={"/home/?page=" +(page - 1).toString()}>prev page</a>
                     </div>
                     

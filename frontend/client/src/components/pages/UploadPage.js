@@ -103,7 +103,7 @@ export default function UploadPage(props)
 
     function generatePreview(e)
     {
-        if(!fileUpload.current.files || fileUpload.current.files.length == 0)
+        if(!fileUpload.current.files || fileUpload.current.files.length === 0)
             return;
 
         const  _files =  Array.from(fileUpload.current.files);

@@ -24,6 +24,7 @@ MIN_IMG_PATH_LENGTH = 3
 
 STATIC_FAVICON_PATH = os.path.join("static", "favicon.ico")
 STATIC_IMAGE_PATH = os.path.join("static", "i")
+STATIC_THUMBNAIL_PATH = os.path.join("static", "t")
 STATIC_VIDEO_PATH = os.path.join("static", "v")
 STATIC_M3U8_PATH  = os.path.join("static", "m3u8")
 STATIC_TEMP_PATH  = os.path.join("static", "tmp")
@@ -31,6 +32,7 @@ STATIC_AUDIO_PATH = os.path.join("static", "a")
 STATIC_LOG_PATH   = os.path.join("static", "logs")
 
 STATIC_IMAGE_ROUTE = STATIC_IMAGE_PATH.replace("\\", "/")
+STATIC_THUMBNAIL_ROUTE = STATIC_THUMBNAIL_PATH.replace("\\", "/")
 STATIC_VIDEO_ROUTE = STATIC_VIDEO_PATH.replace("\\", "/")
 STATIC_M3U8_ROUTE  = STATIC_M3U8_PATH.replace("\\", "/")
 STATIC_AUDIO_ROUTE = STATIC_AUDIO_PATH.replace("\\", "/")
@@ -59,12 +61,16 @@ UNICODE_REPLACEMENT_CHARACTER = u'\ufffd'
 BNYAN_MAIN    = ("BNMain"   , os.path.join("static", "logs", "BNMain.log"))
 BNYAN_METHODS = ("BNMethods", os.path.join("static", "logs", "BNMethods.log"))
 BNYAN_THREADS = ("BNThreading", os.path.join("static", "logs", "BNThreading.log"))
+BNYAN_IMAGE_HANDLING = ("BNImageHandling", os.path.join("static", "logs", "BNImageHandling.log"))
 
 
 ######## Threads ########
 
 THREAD_FFMPEG = "ffmpeg worker"
+THREAD_THUMBNAIL = "thumbnail worker"
 
+######## thumbnail ########
+THUMBNAIL_SIZE = (125, 150)
 
 ######## Datebase ########
 

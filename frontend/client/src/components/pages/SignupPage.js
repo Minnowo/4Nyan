@@ -52,7 +52,7 @@ export default function RegisterPage(props)
 
             console.log(response);
 
-            if(request.status != 200)
+            if(request.status !== 200)
                 return;
 
             if (!response.user_id)

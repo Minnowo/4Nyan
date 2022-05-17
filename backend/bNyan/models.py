@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 from fastapi import Query
 ######## Auth ########
 
@@ -29,7 +29,7 @@ class File(BaseModel):
 
 class File_Response(File):
 
-    static_url : str = None 
+    static_url : Tuple[str] = None 
 
 
 

@@ -6,12 +6,14 @@ from ..constants_ import mime_types as MT
 
 from . import video_handling
 from . import audio_handling
+from . import image_handling
 
 import os.path
 
 # very big thanks to https://github.com/hydrusnetwork/hydrus
 # 
 # the 'get_mime' function was taken directly from hydrus.Core.HydrusFileHandling
+
 
 
 def get_mime(path : str) -> int:
@@ -88,7 +90,7 @@ def get_mime_from_bytes(bit_to_check : bytes) -> int:
             
             if mime in ( MT.UNDETERMINED_VIDEO_WM, MT.UNDETERMINED_VIDEO_MP4 ):
                 
-                raise exceptions.FFMPEGRequiredException("the given bytes belong to an unknown video format, ffmpeg will be needed to determine the format.")                
+                raise exceptions.FFMPEG_Required_Exception("the given bytes belong to an unknown video format, ffmpeg will be needed to determine the format.")                
 
             return mime
     

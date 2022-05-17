@@ -121,3 +121,6 @@ class Thread_Exists_Exception(Nyan_Exception):
 
 class Thread_Does_Not_Exists_Exception(Nyan_Exception):
     """ raised when trying to access a thread that doesn't exist """
+
+class Failed_To_Render_With_OpenCV_Exception(Nyan_Exception):
+    """ raised when openCV cannot render stuff """

@@ -12,7 +12,7 @@ export function getData(url, headers = {})
         xhr.open('GET', url, true);
 
         // // set request headers given
-        Object.keys(headers).map((key) => 
+        Object.keys(headers).forEach((key) => 
         {
             xhr.setRequestHeader(key, headers[key]);
         });
@@ -22,7 +22,7 @@ export function getData(url, headers = {})
         {
             const status = xhr.status;
             
-            if (status == 200) 
+            if (status === 200) 
             {
                 resolve(xhr);
             } 
@@ -48,7 +48,7 @@ function postData(url, data, headers = {}, progress = null)
         xhr.open('POST', url, true);
 
         // set request headers given
-        Object.keys(headers).map((key) => 
+        Object.keys(headers).forEach((key) => 
         {
             xhr.setRequestHeader(key, headers[key]);
         });
@@ -61,7 +61,7 @@ function postData(url, data, headers = {}, progress = null)
         {
             const status = xhr.status;
             
-            if (status == 200) 
+            if (status === 200) 
             {
                 resolve(xhr);
             } 
