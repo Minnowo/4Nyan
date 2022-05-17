@@ -78,10 +78,11 @@ export default function Default(props)
 
                             const props = {
                                 image : thumbUrl,
-                                caption : "",
+                                caption : value.width + " x " + value.height,
                                 fileType : null ,
                                 style : {
-                                    width : "10%"
+                                    width : "10%",
+                                    border : "1px solid white",
                                 }
                             }
 
