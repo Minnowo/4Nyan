@@ -209,6 +209,9 @@ def get_m3u8(file : str, request : Request):
 
 def static_lookup(file_hash : str):
     
+    LOGGER.error("This endpoint is depricated")
+    raise Exception("Depricated endpoint")
+
     # ensure only hexadeciaml is given 
     file_hash = reg.IS_HEXADECIMAL.match(file_hash)
 
@@ -251,7 +254,11 @@ def generate_thumbnail(data):
         dst = data.get("dst")
         mime = data.get("mime")
 
-        file_handling.image_handling.generate_save_image_thumbnail(src, dst, mime, constants_.THUMBNAIL_SIZE, file_handling.image_handling.THUMBNAIL_SCALE_DOWN_ONLY)
+        if not file_handling.image_handling.generate_save_image_thumbnail(
+            src, dst, mime, 
+            constants_.THUMBNAIL_SIZE, 
+            file_handling.image_handling.THUMBNAIL_SCALE_DOWN_ONLY):
+            LOGGER.warning("failed to generate thumbnail for: " + src)
 
     except Exception as e:
 

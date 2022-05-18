@@ -44,58 +44,68 @@ export default function Default(props)
             content_tag : content_tag
         }
 
-        await getData(get_endpoint, headers)
-                .then(e    => 
-                    {
-                        if(e.status !== 200)
-                            return;
+
+        try 
+        {
+            const req = await getData(get_endpoint, headers);
+
+            if(req.status !== 200)
+                return;
                         
-                        let content = JSON.parse(e.response);
-                        
-                        if(objectEmpty(content))
-                        {
-                            content = JSON.parse(window.localStorage.getItem("content"));
-                            console.log("cache hit");
+                let content = JSON.parse(req.response);
+                
+                if(objectEmpty(content))
+                {
+                    content = JSON.parse(window.localStorage.getItem("content"));
+                    console.log("cache hit");
+                }
+                else 
+                {
+                    //Store into localStorage
+                    window.localStorage.setItem("content", req.response);
+                    window.localStorage.setItem("content_tag", content.content_tag);
+                    console.log("cache miss");
+                }
+
+                let display = [];
+                const max = Math.min(content.content.length, page * 25);
+
+                for(let i = Math.max(max - 25, 0); i < max; i++)
+                {
+                    const value    = content.content[i];
+                    const fullUrl  = value.static_url[0];
+                    const thumbUrl = value.static_url[1];
+
+                    const props = {
+                        image : thumbUrl,
+                        caption : value.width + " x " + value.height,
+                        fileType : null ,
+                        style : {
+                            width : "125px",
+                            border : "1px solid white",
+                            "vertical-align" : "middle",
+
+                            // "display": "flex",
+                            // width: "195px",
+                            // height: "185px",
+                            // "margin-top": "20px",
+                            // "align-items": "center",
+                            // "justify-content": "center"
                         }
-                        else 
-                        {
-                            //Store into localStorage
-                            window.localStorage.setItem("content", e.response);
-                            window.localStorage.setItem("content_tag", content.content_tag);
-                            console.log("cache miss");
-                        }
+                    }
 
-                        console.log(content.content)
+                    display.push(
+                    <a key={i} href={fullUrl} target="_blank" rel="noopener noreferrer">
+                        <FileUpload {...props} ></FileUpload>
+                    </a>);
+                }
 
-                        let display = [];
-                        const max = Math.min(content.content.length, page * 25);
+                setPreview(display);
+        }
+        catch(e)
+        {
 
-                        for(let i = Math.max(max - 25, 0); i < max; i++)
-                        {
-                            const value = content.content[i];
-                            const fullUrl = value.static_url[0];
-                            const thumbUrl = value.static_url[1];
-
-                            const props = {
-                                image : thumbUrl,
-                                caption : value.width + " x " + value.height,
-                                fileType : null ,
-                                style : {
-                                    width : "10%",
-                                    border : "1px solid white",
-                                }
-                            }
-
-                            display.push(
-                            <a key={i} href={fullUrl} target="_blank" rel="noopener noreferrer">
-                                <FileUpload {...props} ></FileUpload>
-                            </a>);
-                        }
-
-                        setPreview(display);
-                    })
-
-                .catch(err => console.log(err.status));
+        }
     }
     
     return (

@@ -22,6 +22,9 @@ HAS_INVALID_PASSWORD_CHARACTERS = compile(r"[^a-zA-Z0-9\-\_\!\@\#\$\%\^\&\*\(\)\
 # searches for anything that is not a-z A-Z 0-9 - _ .
 HAS_INVALID_USERNAME_CHARACTERS = compile(r"[^a-zA-Z0-9\-\_\.]")
 
-IS_HEXADECIMAL = compile(r"^(?:0[xX])?([a-fA-F0-9]+)$")
+IS_HEXADECIMAL = compile(r"^(?:0[xX])?(?P<hex>[a-fA-F0-9]+)$")
+IS_RAW_HEXADECIMAL = compile(r"^([a-fA-F0-9]+)$")
 
 IS_TS_FILENAME = compile(r"^\d+\.ts")
+
+TAG = compile(r"^(?:(?P<namespace>.+):)?(?P<tag>.+)$")

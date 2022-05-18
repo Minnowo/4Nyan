@@ -1,14 +1,14 @@
 
 
 import os 
-from fastapi import FastAPI, Request, Depends, File, UploadFile, Query
+from fastapi import FastAPI, Request, Depends, File, UploadFile, Query, Body
 from fastapi.security import OAuth2PasswordRequestForm 
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from typing import List 
-from typing import Optional
+from typing import Optional, Union
 
 from . import file_handling
 
@@ -66,9 +66,17 @@ async def getfile(request : Request, file_id : str = ""):
 
     return methods.static_lookup(file_id)
 
+@app.get("/search/get_file_tags")
+async def search_tags(request : Request, fid : List[int] = Query(None), fh : List[str] = Query(None)):
+
+    if fh:
+
+        fh = [bytes.fromhex(h) for h in fh if reg.IS_RAW_HEXADECIMAL.match(h)]
+
+
 
 @app.get("/search/get_files")
-async def search_files(request : Request, sort_type : int = 4, sort_asc : bool = False, hash_ids : List[int] = Query(None)):
+async def search_files(request : Request, sort_t : int = 4, sort_a : bool = False, fid : List[int] = Query(None)):
 
     htag = request.headers.get("content_tag", None)
     etag = config.get((), "content_tag")
@@ -76,13 +84,13 @@ async def search_files(request : Request, sort_type : int = 4, sort_asc : bool =
     if htag:
 
         if htag == etag:
-            print("Cache hit")
+
             return {}
 
     search = models.FileSearch()
-    search.sort_type = sort_type
-    search.sort_asc = sort_asc
-    search.hash_ids = hash_ids
+    search.sort_type = sort_t
+    search.sort_asc = sort_a
+    search.hash_ids = fid
     
     files = [ ]
     for file in database.Methods.search_files(search):
@@ -105,6 +113,18 @@ async def search_files(request : Request, sort_type : int = 4, sort_asc : bool =
     return {
         "content_tag" : etag,
         "content" : files 
+    }
+
+
+@app.post("/create/tag")
+async def create_tag(request : Request, tag : Union[models.Tag, List[models.Tag]]): #, user = Depends(auth.manager)):
+
+    print(tag)
+    
+    print(type(tag))
+
+    return {
+        "tag" : tag,
     }
 
 

@@ -4,6 +4,7 @@ const API_ENDPOINTS = {
     login : "auth/token/",
     register : "create/user/",
     upload_file : "create/file/",
+    create_tag : "create/tag",
     static : {
         video : "static/v/",
         image : "static/i/",

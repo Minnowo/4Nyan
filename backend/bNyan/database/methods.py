@@ -141,6 +141,40 @@ def get_file_by_id(hash_id : int) -> models.File:
             )
 
 
+def create_tag(tag : str):
+    
+    namespace = tag[0 : tag.index(":")]
+
+
+def get_file_tags_from_hash(hash : bytes):
+
+    raise Exception("no implemented")
+
+def get_file_tags_from_id(file_id : int ):
+
+    raise Exception("no implemented")
+
+    # with Session.begin() as session:
+
+    #     result = session.query(TBL_Tag_Map).filter_by(hash_id = file_id).all()
+
+    # if not result:
+    #     return None 
+
+    # return models.File(
+    #         hash_id    = result.hash_id,
+    #         hash       = result.hash,
+    #         size       = result.size,
+    #         mime       = result.mime,
+    #         width      = result.width,
+    #         height     = result.height,
+    #         duration   = result.duration,
+    #         has_audio  = result.has_audio,
+    #         date_added = result.date_added
+    #     )
+
+
+
 def remove_file(hash : bytes):
     """ removes the file from the database, returns True if the file is not found or removed """
     with Session.begin() as session:

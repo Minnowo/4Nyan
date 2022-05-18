@@ -45,6 +45,13 @@ class FileSearch(BaseModel):
     tag_ids   : List[int] = Query(None )
 
 
+class Tag(BaseModel):
+
+    tag_id : int = None 
+    tag    : str 
+
+
+
 ######## User ########
 
 class User(BaseModel):

@@ -126,7 +126,6 @@ RESTRICT_MAP_NO_SEP = {
 # Enhanced AC-3         [AC_3]
 
 
-
 mime_ext_lookup = {
     APPLICATION_UNKNOWN : "unknown",
 

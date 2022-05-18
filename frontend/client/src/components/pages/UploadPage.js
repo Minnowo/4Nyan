@@ -47,7 +47,7 @@ export default function UploadPage(props)
                 URL.revokeObjectURL(f);
             }
         }
-    });
+    },[]);
 
     async function beginUpload(e)
     {
@@ -63,42 +63,47 @@ export default function UploadPage(props)
         if (!token || !token_type)
             return; 
 
+        
+        let uploadFile = "";
+        let totalSize = 0;
+        function progress(event)
+        {
+            setProgress(`${uploadFile}: uploaded ${event.loaded} / ${totalSize} bytes`);
+        }
+
         let message = []
-        let flag = false;
         for(let f of files)
         {
             const upload_endpoint = API_ENDPOINTS.backend_ref + API_ENDPOINTS.upload_file;
-            const totalSize       = f.size;
             const data            = new FormData();
 
             const headers = {
                 Authorization :  `${token_type} ${token}`,
             };
 
-            function progress(event)
-            {
-                setProgress(`${f.name}: uploaded ${event.loaded} / ${totalSize} bytes`);
-            }
+            totalSize  = f.size;
+            uploadFile = f.name;
 
             data.append("data", f, f.name);
             
-            await postData(upload_endpoint, data, headers, progress)
-                .then(e    => message.push(<div style={{color:"green"}} key={f.name}>{f.name}: {e.status}</div>))
-                .catch(err => 
-                    { 
-                        message.push(<div style={{color:"red"}}   key={f.name}>{f.name}: {err.status}</div>);
+            try 
+            {
+                const req = await postData(upload_endpoint, data, headers, progress);
 
-                        if(err.status === 401)
-                        {
-                            flag = true;
-                        }
-                    });
+                message.push(<div style={{color:"green"}} key={f.name}>{f.name}: {req.status}</div>);
+            }
+            catch(e)
+            {
+                message.push(<div style={{color:"red"}}   key={f.name}>{f.name}: {e.status}</div>);
 
-            if(flag)
-                break;
+                if(e.status === 401)
+                {
+                    break;
+                }
+            }
         }
-        
-        setMessage(message);
+
+        setMessage(message);        
     }
 
     function generatePreview(e)
@@ -115,7 +120,7 @@ export default function UploadPage(props)
         }
 
         // generage file list for new files 
-        let newFiles = [];
+        let newFiles   = [];
         let newPreview = [];
 
         for (let f of _files) 
