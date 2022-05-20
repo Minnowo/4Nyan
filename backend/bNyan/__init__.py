@@ -1,7 +1,8 @@
 
 
-import os 
-from fastapi import FastAPI, Request, Depends, File, UploadFile, Query, Body
+import os
+from urllib.error import HTTPError 
+from fastapi import FastAPI, HTTPException, Request, Depends, File, UploadFile, Query, Body
 from fastapi.security import OAuth2PasswordRequestForm 
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
@@ -69,14 +70,36 @@ async def getfile(request : Request, file_id : str = ""):
 @app.get("/search/get_file_tags")
 async def search_tags(request : Request, fid : List[int] = Query(None), fh : List[str] = Query(None)):
 
+    tag = {}
+
     if fh:
 
         fh = [bytes.fromhex(h) for h in fh if reg.IS_RAW_HEXADECIMAL.match(h)]
 
+    
+    if fid:
+
+        for id in fid:
+        
+            tag[id] = [t for t in database.Methods.get_file_tags_from_id(id)]
+        
+    return tag 
+
+
+@app.get("/search/get_categories/")
+async def search_categories(request : Request):
+
+    return list(database.Methods.get_categories())
 
 
 @app.get("/search/get_files")
-async def search_files(request : Request, sort_t : int = 4, sort_a : bool = False, fid : List[int] = Query(None)):
+async def search_files(request : Request, 
+                        sort_t : int = 4, sort_a : bool = False, 
+                        fid : List[int] = Query(None), # hash id
+                        tid : List[int] = Query(None), # tag id 
+                        nid : List[int] = Query(None), # namespace id 
+                        sid : List[int] = Query(None)  # subtag id 
+                        ):
 
     htag = request.headers.get("content_tag", None)
     etag = config.get((), "content_tag")
@@ -91,6 +114,9 @@ async def search_files(request : Request, sort_t : int = 4, sort_a : bool = Fals
     search.sort_type = sort_t
     search.sort_asc = sort_a
     search.hash_ids = fid
+    search.tag_ids = tid 
+    search.namespace_ids = nid 
+    search.subtag_ids = sid 
     
     files = [ ]
     for file in database.Methods.search_files(search):
@@ -104,8 +130,17 @@ async def search_files(request : Request, sort_t : int = 4, sort_a : bool = Fals
         leading = "http://" + config.get((), "server_address") + "/"
         ending  = file.hash + constants_.mime_ext_lookup.get(file.mime, "") 
 
-        file.static_url = ( leading + methods.get_static_route_from_mime(file.mime) + "/" + ending, 
-                            leading + constants_.STATIC_THUMBNAIL_ROUTE + "/" + ending )
+        if file.mime in constants_.VIDEO_MIMES and \
+            os.path.isfile(os.path.join(constants_.STATIC_M3U8_PATH, file.hash[0:2], file.hash + ".m3u8")):
+
+            file.static_url = ( leading + methods.get_static_route_from_mime(file.mime) + "/" + ending, 
+                                leading + constants_.STATIC_THUMBNAIL_ROUTE + "/" + ending ,
+                                leading + constants_.STATIC_M3U8_ROUTE + "/" + file.hash + ".m3u8")
+
+        else:
+            
+            file.static_url = ( leading + methods.get_static_route_from_mime(file.mime) + "/" + ending, 
+                                leading + constants_.STATIC_THUMBNAIL_ROUTE + "/" + ending )
         
         files.append(file)
         
@@ -117,19 +152,31 @@ async def search_files(request : Request, sort_t : int = 4, sort_a : bool = Fals
 
 
 @app.post("/create/tag")
-async def create_tag(request : Request, tag : Union[models.Tag, List[models.Tag]]): #, user = Depends(auth.manager)):
+async def create_tag(request : Request, tag : Union[str, List[str]]): #, user = Depends(auth.manager)):
 
-    print(tag)
+    if isinstance(tag, str):
+        
+        return database.Methods.create_tag(tag)
+
     
-    print(type(tag))
+    if isinstance(tag, list):
+        
+        i = []
+        for t in tag:
+            
+            try:
+                i.append(database.Methods.create_tag(t))
+            
+            except HTTPException:
+                pass 
 
-    return {
-        "tag" : tag,
-    }
+        return i
+
+    raise exceptions.API_400_BAD_REQUEST_EXCEPTION
 
 
 @app.post("/create/file")
-async def create_item(request : Request, data: UploadFile = File(...), user = Depends(auth.manager)):
+async def create_item(request : Request, data: UploadFile = File(...) ): #, user = Depends(auth.manager)):
 
     data_size = util.parse_int(request.headers.get('content-length', None), None)
 
@@ -145,6 +192,13 @@ async def create_item(request : Request, data: UploadFile = File(...), user = De
     config.set((), "content_tag", os.urandom(32).hex())
     
     return True 
+
+
+@app.post("/create/map")
+async def create_map(request : Request, ftmap : Union[models.Tag_File, List[models.Tag_File]]):
+    
+    database.Methods.add_tag_to_file(ftmap)
+
 
 
 
@@ -182,6 +236,19 @@ async def login(request : Request, data: OAuth2PasswordRequestForm = Depends()):
     }
 
 
+@app.head('/static/{category}/{path}')
+async def statichead(category: str, path: str, request : Request, ts : str = ""):
+    cat = methods.CATEGORY_MAP.get(category, None)
+    
+    if cat is None:
+        raise exceptions.API_404_NOT_FOUND_EXCEPTION
+
+    if ts: # should probably check category or make the function just take the ts arg 
+
+        return methods.get_video((path, ts), request)
+
+    return cat(path, request)
+
 @app.get('/static/{category}/{path}')
 async def staticv1(category: str, path: str, request : Request, ts : str = ""):
 
@@ -195,6 +262,8 @@ async def staticv1(category: str, path: str, request : Request, ts : str = ""):
         return methods.get_video((path, ts), request)
 
     return cat(path, request)
+
+
 
 @app.get('/favicon.ico')
 async def favicon():
@@ -253,6 +322,7 @@ def main():
 
     LOGGER.info("Creating database tables.")
     database.Base.metadata.create_all()
+    database.Methods.add_defaults()
 
     try:
         threading_.spawn_worker_thread(constants_.THREAD_FFMPEG, lambda x : None)

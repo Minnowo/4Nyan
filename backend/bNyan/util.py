@@ -89,7 +89,8 @@ def rename_file(filename : str, new_filename : str, *, replace : bool = False) -
         os.rename(filename, new_filename)
         return True 
 
-    except OSError:
+    except OSError as e:
+        print(e)
         return False 
 
 

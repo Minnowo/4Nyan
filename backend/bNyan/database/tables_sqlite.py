@@ -37,7 +37,7 @@ class TBL_Tags(Base):
 
     tag_id         = Column(Integer, unique=True)
     namespace_id   = Column(Integer, ForeignKey('tbl_namespace.namespace_id'), primary_key=True)
-    subtag_id      = Column(Integer, ForeignKey('tbl_subtag.subtag_id'), primary_key=True)
+    subtag_id      = Column(Integer, ForeignKey('tbl_subtag.subtag_id')      , primary_key=True)
 
     
 class TBL_Tag_Map(Base):
@@ -50,14 +50,14 @@ class TBL_Tag_Map(Base):
 class TBL_Namespace(Base):
     __tablename__ = "tbl_namespace"
 
-    namespace_id   = Column(Integer, primary_key=True)
+    namespace_id   = Column(Integer, primary_key=True, autoincrement=True)
     namespace   = Column(VARCHAR(32))
 
 
 class TBL_Subtag(Base):
     __tablename__ = "tbl_subtag"
     
-    subtag_id = Column(Integer, primary_key=True)
+    subtag_id = Column(Integer, primary_key=True, autoincrement=True)
     subtag    = Column(VARCHAR(32))
 
 
@@ -92,5 +92,3 @@ class TBL_Watched(Base):
     rating_id   = Column(Integer, ForeignKey('tbl_rating.rating_id'))
     watch_time  = Column(Integer)
     watch_count = Column(Integer)
-
-

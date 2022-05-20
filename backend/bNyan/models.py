@@ -38,17 +38,29 @@ class FileSearch(BaseModel):
     sort_asc  : bool = True 
     sort_type : int = 0
 
-    hash_ids  : List[int] = Query(None )
-    hashes    : List[str] = Query(None )
+    hash_ids  : List[int] = None
+    hashes    : List[str] = None
 
-    tag_names : List[str] = Query(None )
-    tag_ids   : List[int] = Query(None )
+    tag_names : List[str] = None
+    tag_ids   : List[int] = None
+
+    namespace_ids : List[int] = None
+    subtag_ids    : List[int] = None
 
 
 class Tag(BaseModel):
 
-    tag_id : int = None 
-    tag    : str 
+    tag_id       : int = None 
+    namespace_id : int = None 
+    subtag_id    : int = None
+    namespace    : str = None 
+    tag          : str 
+
+
+class Tag_File(BaseModel):
+
+    file_id : int
+    tag_id  : int 
 
 
 

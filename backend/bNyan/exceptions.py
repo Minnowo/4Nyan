@@ -38,15 +38,14 @@ API_500_OSERROR = HTTPException(
     detail="server error",
 )
 
+API_404_USER_NOT_FOUND_EXCEPTION = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail="user does not exist"
+)
 
 API_409_FILE_EXISTS_EXCEPTION = HTTPException(
     status_code=409,
     detail="File already exists",
-)
-
-API_404_USER_NOT_FOUND_EXCEPTION = HTTPException(
-    status_code=status.HTTP_404_NOT_FOUND,
-    detail="user does not exist"
 )
 
 API_409_USERNAME_CONFLICT_EXCEPTION = HTTPException(

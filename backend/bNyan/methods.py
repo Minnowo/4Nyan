@@ -125,14 +125,20 @@ def get_static_path_from_mime(mime : int):
 def get_image(image_name : str, request : Request):
     """ returns a FileResponse with the requested image """
 
+    if request.method == "HEAD":
+        return {}
+
     image_name = get_clean_name_or_die(image_name, constants_.STATIC_IMAGE_PATH)
-    
+
     return FileResponse(image_name)
 
 
 # returns a FileReponse object
 def get_thumbnail(image_name : str, request : Request):
     """ returns a FileResponse with the requested image """
+
+    if request.method == "HEAD":
+        return {}
 
     image_name = get_clean_name_or_die(image_name, constants_.STATIC_THUMBNAIL_PATH)
 
@@ -150,8 +156,7 @@ def stream_video(video_name : str, request : Request):
     total_response_size = os.stat(video_name).st_size
 
     # get start byte range from header, default to 0 
-    _range = reg.RANGE_HEADER.search(
-                                request.headers.get("range", "bytes=0-"))
+    _range = reg.RANGE_HEADER.search(request.headers.get("range", "bytes=0-"))
 
     if not _range: # doesn't match regex, bad header request 
         raise exceptions.API_400_BAD_REQUEST_EXCEPTION
@@ -159,17 +164,21 @@ def stream_video(video_name : str, request : Request):
     start_byte_requested = int(_range.group(1))
     end_byte_planned     = min(start_byte_requested + constants_.VIDEO_STREAM_CHUNK_SIZE, total_response_size)
 
+    headers={
+            "Accept-Ranges" : "bytes",
+            "Content-Range" : f"bytes {start_byte_requested}-{end_byte_planned}/{total_response_size}",
+            "Content-Type"  : "video/mp4"
+        }
+
+    if request.method == "HEAD":
+        return headers 
+
     with open(video_name, "rb") as reader:
 
         reader.seek(start_byte_requested)
 
         data = reader.read(end_byte_planned)
-
-        headers={
-            "Accept-Ranges" : "bytes",
-            "Content-Range" : f"bytes {start_byte_requested}-{end_byte_planned}/{total_response_size}",
-            "Content-Type"  : "video/mp4"
-        }
+        
         return Response(data, status_code=constants_.status_codes.PARTIAL_RESPONSE, headers=headers)
 
 
@@ -188,15 +197,20 @@ def get_video(video_name : tuple, request : Request):
     
     total_response_size = os.stat(video_path).st_size
 
-    with open(video_path, "rb") as reader:
-
-        data = reader.read(total_response_size)
-
-        headers={
+    headers={
             "Accept-Ranges" : "bytes",
             "Content-Range" : f"bytes {0}-{total_response_size}/{total_response_size}",
             "Content-Type"  : "video/ts"
         }
+
+    if request.method == "HEAD":
+        return headers 
+
+    with open(video_path, "rb") as reader:
+
+        data = reader.read(total_response_size)
+
+        
         return Response(data, status_code=constants_.status_codes.RESPONSE, headers=headers) 
 
 
@@ -283,6 +297,24 @@ def add_file_to_database(sha256 : bytes, file_size : int, mime : int, delete_on_
         # will throw an exception if the file is in the database 
         database.Methods.add_file(db_file)
 
+        if "tags" in kwargs:
+
+            for t in kwargs["tags"]:
+
+                try:
+                    
+                    tag = database.Methods.create_tag(t)
+                    database.Methods.add_tag_to_file(models.Tag_File(tag_id=tag.tag_id, file_id = db_file.hash_id))
+
+                except HTTPException:
+                    
+                    continue 
+
+                except Exception as e:
+                    LOGGER.error("Exception thrown adding tag to file " + e.__repr__())
+
+
+
     except HTTPException as e:
         
         LOGGER.warning("error thrown adding file to the database -> {}".format(e))
@@ -341,16 +373,16 @@ def process_video(data):
         LOGGER.error(e)
 
 
-def add_image_to_database(sha256_bytes : bytes, file_size : int , mime : int, filename : str):
+def add_image_to_database(sha256_bytes : bytes, file_size : int , mime : int, filename : str, **kwargs):
     """ adds the image file to the database """
 
     width, height = isr.get_image_size(filename)
 
-    kwargs = {
+    kwargs.update({
         "width" : width,
         "height" : height, 
         "has_audio" : False,
-    }
+    })
 
     add_file_to_database(sha256_bytes, file_size, mime, filename, **kwargs)
 
@@ -393,6 +425,8 @@ async def process_file_upload(file : UploadFile):
             h_sha256.update(chunk)
 
             writer.write(chunk)
+
+    original_filename = file.filename
 
     await file.close()
 
@@ -444,6 +478,12 @@ async def process_file_upload(file : UploadFile):
         LOGGER.warning("Cannot rename file '{0}' -> '{1}' hash '{2}' assuming file exists".format(tempname, filename, sha256_hex))
 
 
+    kwargs = {
+        "tags" : [
+            "filename:" + original_filename
+        ]
+    }
+
     if static_path == constants_.STATIC_IMAGE_PATH:
 
         tdata = {
@@ -454,14 +494,14 @@ async def process_file_upload(file : UploadFile):
 
         threading_.append_worker_data(constants_.THREAD_THUMBNAIL, tdata, generate_thumbnail)
 
-        add_image_to_database(sha256_bytes, file_size, mime, filename)
+        add_image_to_database(sha256_bytes, file_size, mime, filename, **kwargs)
         return 
 
 
 
     if static_path != constants_.STATIC_VIDEO_PATH:
         
-        add_file_to_database(sha256_bytes, file_size, mime, filename)
+        add_file_to_database(sha256_bytes, file_size, mime, filename, **kwargs)
 
         return
 
@@ -476,6 +516,7 @@ async def process_file_upload(file : UploadFile):
 
         raise exceptions.API_500_OSERROR
 
+    video_info.update(kwargs)
 
     data = {
         "file_path"    : filename,
@@ -487,7 +528,7 @@ async def process_file_upload(file : UploadFile):
         "mime"         : mime,
         "video_info"   : video_info
     }
-
+    
     threading_.append_worker_data(constants_.THREAD_FFMPEG, data, process_video)
 
         
