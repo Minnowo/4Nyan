@@ -4,12 +4,20 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import event
 
 from ..constants_ import DB_URL, DATABASE_FOLDER
 from ..util import create_directory
 
+
+def _fk_pragma_on_connect(dbapi_con, con_record):
+    dbapi_con.execute('pragma foreign_keys=ON')
+
+
 create_directory(DATABASE_FOLDER)
 Engine = create_engine(DB_URL, echo=False)
+
+event.listen(Engine, 'connect', _fk_pragma_on_connect)
 
 Session = sessionmaker(Engine)
 

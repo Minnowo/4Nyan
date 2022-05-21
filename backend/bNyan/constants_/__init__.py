@@ -58,10 +58,12 @@ UNICODE_REPLACEMENT_CHARACTER = u'\ufffd'
 
 ######## Loggers ########
 
-BNYAN_MAIN    = ("BNMain"   , os.path.join("static", "logs", "BNMain.log"))
-BNYAN_METHODS = ("BNMethods", os.path.join("static", "logs", "BNMethods.log"))
-BNYAN_THREADS = ("BNThreading", os.path.join("static", "logs", "BNThreading.log"))
-BNYAN_IMAGE_HANDLING = ("BNImageHandling", os.path.join("static", "logs", "BNImageHandling.log"))
+BNYAN_MAIN           = ("BN_Main"   , os.path.join("static", "logs", "BN_Main.log"))
+BNYAN_METHODS        = ("BN_Methods", os.path.join("static", "logs", "BN_Methods.log"))
+BNYAN_THREADS        = ("BN_Threading", os.path.join("static", "logs", "BN_Threading.log"))
+BNYAN_IMAGE_HANDLING = ("BN_Image_Handling", os.path.join("static", "logs", "BN_Image_Handling.log"))
+BNYAN_VIDEO_HANDLING = ("BN_Video_Handling", os.path.join("static", "logs", "BN_Video_Handling.log"))
+BNYAN_DB_METHODS     = ("BN_DB_Methods", os.path.join("static", "logs", "BN_DB_Methods.log"))
 
 
 ######## Threads ########

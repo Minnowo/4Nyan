@@ -9,6 +9,7 @@ from .. import models
 from .. import exceptions
 from .. import auth
 from .. import constants_
+from .. import bn_logging
 from ..reg import HAS_INVALID_PASSWORD_CHARACTERS, HAS_INVALID_USERNAME_CHARACTERS, TAG
 
 from datetime import datetime 
@@ -30,6 +31,8 @@ namespace_map = {
     "category" : -1
 }
 
+
+LOGGER = bn_logging.get_logger(constants_.BNYAN_DB_METHODS[0], constants_.BNYAN_DB_METHODS[1])
 
 # User ---------------------------------------------------
 
@@ -197,7 +200,7 @@ def create_tag(tag_ : str):
         raise exceptions.API_400_BAD_REQUEST_EXCEPTION
 
     namespace_ = t.group("namespace") or ""
-    tag       = t.group("tag")
+    tag        = t.group("tag")
 
     with Session.begin() as session:
 
@@ -256,9 +259,10 @@ def create_tag(tag_ : str):
             
             auto_inc_cache.__tag_id_cache += 1
 
-        except (IntegrityError, sqlite3.IntegrityError):
+        except (IntegrityError, sqlite3.IntegrityError) as e:
             
-            raise exceptions.API_409_FILE_EXISTS_EXCEPTION
+            LOGGER.warning(e)
+            raise exceptions.API_409_TAG_CREATION_EXCEPTION
 
         return models.Tag(
             tag_id       = new_tag.tag_id,
@@ -315,7 +319,7 @@ def get_categories():
 
 def get_file_tags_from_hash(hash : bytes):
 
-    raise Exception("no implemented")
+    raise exceptions.API_500_NOT_IMPLEMENTED
 
 def get_file_tags_from_id(file_id : int ):
 
@@ -404,12 +408,14 @@ def add_tag_to_file(ftmap : models.Tag_File):
             session.add(new_map)
             session.flush()
 
-        except IntegrityError:
-            raise exceptions.API_409_FILE_EXISTS_EXCEPTION
+        except IntegrityError as e:
+
+            LOGGER.warning(e)
+            raise exceptions.API_409_TAG_CREATION_EXCEPTION
 
         except Exception as e:
-            print(type(e))
-            print(e)
+            LOGGER.error(type(e))
+            LOGGER.error(e)
 
 
 

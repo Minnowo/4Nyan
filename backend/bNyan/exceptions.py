@@ -2,10 +2,6 @@ from fastapi import HTTPException, status
 import collections.abc
 import os 
 
-API_418_TEAPOT_EXCEPTION = HTTPException(
-    status_code=418,
-    detail="I'm a teapot",
-)
 
 API_400_BAD_REQUEST_EXCEPTION = HTTPException(
     status_code=400,
@@ -17,25 +13,17 @@ API_400_BAD_FILE_EXCEPTION = HTTPException(
     detail="unsupported file",
 )
 
+
 API_401_CREDENTIALS_EXCEPTION = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="could not validate credentials",
     headers={"WWW-Authenticate": "Bearer"},
 )
 
+
 API_404_NOT_FOUND_EXCEPTION = HTTPException(
     status_code=404,
     detail="not found",
-)
-
-API_500_SIGNATURE_EXCEPTION = HTTPException(
-    status_code=500,
-    detail="server error",
-)
-
-API_500_OSERROR = HTTPException(
-    status_code=500,
-    detail="server error",
 )
 
 API_404_USER_NOT_FOUND_EXCEPTION = HTTPException(
@@ -43,9 +31,17 @@ API_404_USER_NOT_FOUND_EXCEPTION = HTTPException(
     detail="user does not exist"
 )
 
+
+
+
 API_409_FILE_EXISTS_EXCEPTION = HTTPException(
     status_code=409,
     detail="File already exists",
+)
+
+API_409_TAG_CREATION_EXCEPTION = HTTPException(
+    status_code=409,
+    detail="Tag conflict, it may already exist",
 )
 
 API_409_USERNAME_CONFLICT_EXCEPTION = HTTPException(
@@ -62,6 +58,23 @@ API_406_PASSWORD_EXCEPTION = HTTPException(
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
             detail="password does not follow guidelines"
         )
+
+
+
+API_500_SIGNATURE_EXCEPTION = HTTPException(
+    status_code=500,
+    detail="server error",
+)
+
+API_500_OSERROR = HTTPException(
+    status_code=500,
+    detail="server error",
+)
+
+API_500_NOT_IMPLEMENTED = HTTPException(
+    status_code=500,
+    detail="Not implemented",
+)
 
 
 

@@ -1,5 +1,6 @@
 
-from distutils import extension
+
+from .. import bn_logging
 from .. import exceptions
 from .. import util 
 
@@ -28,7 +29,7 @@ import os.path
 # the 'get_ffmpeg_info_lines' function was taken directly from hydrus.Core.HydrusVideoHandling
 # the 'get_video_mime' function was taken directly from hydrus.Core.HydrusVideoHandling
 
-
+LOGGER = bn_logging.get_logger(C.BNYAN_VIDEO_HANDLING[0], C.BNYAN_VIDEO_HANDLING[1])
 
 def parse_ffmpeg_video_line( lines, png_ok = False ):
     """ finds the video line from ffmpeg lines """
@@ -509,14 +510,20 @@ def split_video(video_path : str, output_directory : str, segment_size : int, ts
 
     process = subprocess.Popen( ff_args, bufsize = 10**5, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
     
+    LOGGER.info("Running FFMPEG with args: {}".format(ff_args))
+    
     ( stdout, stderr ) = util.subprocess_communicate( process )
     
     data_bytes = stderr
     
     if len( data_bytes ) != 0:
+
+        LOGGER.info("FFMPEG failed with exit: {}".format(non_failing_unicode_decode( data_bytes, 'utf-8' )))
         
         raise exceptions.FFMPEG_Exception( non_failing_unicode_decode( data_bytes, 'utf-8' ) )
         
+    LOGGER.info("FFMPEG finished")
+
     del process
 
     subs_vtt   = os.path.join(output_directory, "index_vtt.m3u8")

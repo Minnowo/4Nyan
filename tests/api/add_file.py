@@ -69,4 +69,4 @@ def create_map(file_id, tag_id):
 
 # upload_file("C:\\Users\\minno\\Documents\\GIT_CLONES\\miagedl\\output\\1.png")
 # create_tag('category:video')
-create_map(5,6)
+create_map(0,6)
