@@ -348,7 +348,7 @@ def process_video(data):
 
     try:
 
-        m3u8 = file_handling.video_handling.split_video(source_video, output_dir, 6, ts_url, m3u8_url, m3u8_url)
+        m3u8 = file_handling.video_handling.split_video(source_video, output_dir, 6, ts_url, m3u8_url, ts_url)
 
     except exceptions.FFMPEG_Exception as e:
 
