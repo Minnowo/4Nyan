@@ -7,7 +7,7 @@ from . import util
 
 def get_logger(name : str, log_file : str = "", log_level = logging.DEBUG):
 
-    formatter = logging.Formatter("[%(asctime)s] [%(levelname)-8s] %(message)s", "%Y-%m-%d %H:%M:%S")
+    formatter = logging.Formatter("[%(asctime)s] [%(levelname)-8s %(message)s", "%Y-%m-%d %H:%M:%S")
 
     stdout_handler = logging.StreamHandler(sys.stdout)
     stdout_handler.setFormatter(formatter)

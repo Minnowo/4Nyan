@@ -130,18 +130,31 @@ async def search_files(request : Request,
         leading = "http://" + config.get((), "server_address") + "/"
         ending  = file.hash + constants_.mime_ext_lookup.get(file.mime, "") 
 
-        if file.mime in constants_.VIDEO_MIMES and \
-            os.path.isfile(os.path.join(constants_.STATIC_M3U8_PATH, file.hash[0:2], file.hash + ".m3u8")):
+        urls    = [ 
+            leading + methods.get_static_route_from_mime(file.mime) + "/" + ending,
+            leading + constants_.STATIC_THUMBNAIL_ROUTE + "/" + ending
+        ]
 
-            file.static_url = ( leading + methods.get_static_route_from_mime(file.mime) + "/" + ending, 
-                                leading + constants_.STATIC_THUMBNAIL_ROUTE + "/" + ending ,
-                                leading + constants_.STATIC_M3U8_ROUTE + "/" + file.hash + ".m3u8")
-
-        else:
+        if file.mime in constants_.VIDEO_MIMES:
             
-            file.static_url = ( leading + methods.get_static_route_from_mime(file.mime) + "/" + ending, 
-                                leading + constants_.STATIC_THUMBNAIL_ROUTE + "/" + ending )
-        
+            m3u8_dir = os.path.join(constants_.STATIC_M3U8_PATH, file.hash[0:2], file.hash)
+            
+            if os.path.isdir(m3u8_dir):
+
+                if os.path.isfile(os.path.join(m3u8_dir, "master.m3u8")):
+
+                    urls.append(leading + constants_.STATIC_M3U8_ROUTE + "/" + file.hash + "?ts=master.m3u8")
+
+                if os.path.isfile(os.path.join(m3u8_dir, "index.m3u8")):
+
+                    urls.append(leading + constants_.STATIC_M3U8_ROUTE + "/" + file.hash + "?ts=index.m3u8")
+
+                if os.path.isfile(os.path.join(m3u8_dir, "index_vtt.m3u8")):
+
+                    urls.append(leading + constants_.STATIC_M3U8_ROUTE + "/" + file.hash + "?ts=index_vtt.m3u8")
+
+        file.static_url = tuple(urls)
+
         files.append(file)
         
 
@@ -243,9 +256,9 @@ async def statichead(category: str, path: str, request : Request, ts : str = "")
     if cat is None:
         raise exceptions.API_404_NOT_FOUND_EXCEPTION
 
-    if ts: # should probably check category or make the function just take the ts arg 
+    if ts:
 
-        return methods.get_video((path, ts), request)
+        return cat((path, ts), request)
 
     return cat(path, request)
 
@@ -257,9 +270,9 @@ async def staticv1(category: str, path: str, request : Request, ts : str = ""):
     if cat is None:
         raise exceptions.API_404_NOT_FOUND_EXCEPTION
 
-    if ts: # should probably check category or make the function just take the ts arg 
+    if ts:
 
-        return methods.get_video((path, ts), request)
+        return cat((path, ts), request)
 
     return cat(path, request)
 

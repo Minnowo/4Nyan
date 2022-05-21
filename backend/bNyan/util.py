@@ -90,7 +90,6 @@ def rename_file(filename : str, new_filename : str, *, replace : bool = False) -
         return True 
 
     except OSError as e:
-        print(e)
         return False 
 
 

@@ -4,6 +4,7 @@ import hashlib
 from fastapi.responses import FileResponse
 from fastapi import Response, UploadFile, HTTPException, Request
 
+from typing import Union
 
 from .constants_ import mime_types as MT 
 
@@ -28,9 +29,15 @@ except ImportError as imperr:
     LOGGER.critical("image-size-reader could not be found, this module is required, install it from https://github.com/Minnowo/image-size-reader")
 
 
-def name_check(path : str, checks = [reg.INVALID_PATH_CHAR]):
+def name_check(path : Union[str, tuple], checks = [reg.INVALID_PATH_CHAR]):
 
-    l = len(path)
+    if isinstance(path, tuple):
+
+        l = sum(len(i) for i in path)
+
+    else:
+
+        l = len(path)
     
     # length check
     if (l < constants_.MIN_IMG_PATH_LENGTH):
@@ -39,11 +46,24 @@ def name_check(path : str, checks = [reg.INVALID_PATH_CHAR]):
     if (l > constants_.MAX_IMG_PATH_LENGTH):
         raise exceptions.API_404_NOT_FOUND_EXCEPTION
 
-    for i in checks:
+    if isinstance(path, tuple):
 
-        if i.search(path):
+        for p in path:
+            
+            for i in checks:
 
-            raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+                if i.search(p):
+
+                    raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+
+    else:
+
+        for i in checks:
+
+            if i.search(path):
+
+                raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+
 
 
 def get_clean_name(path : str, rout : str):
@@ -121,8 +141,12 @@ def get_static_path_from_mime(mime : int):
 
 
 
-# returns a FileReponse object
-def get_image(image_name : str, request : Request):
+
+
+
+
+
+def _get_image(image_name : str, request : Request):
     """ returns a FileResponse with the requested image """
 
     if request.method == "HEAD":
@@ -133,8 +157,7 @@ def get_image(image_name : str, request : Request):
     return FileResponse(image_name)
 
 
-# returns a FileReponse object
-def get_thumbnail(image_name : str, request : Request):
+def _get_thumbnail(image_name : str, request : Request):
     """ returns a FileResponse with the requested image """
 
     if request.method == "HEAD":
@@ -145,7 +168,7 @@ def get_thumbnail(image_name : str, request : Request):
     return FileResponse(image_name)
 
 
-def stream_video(video_name : str, request : Request):
+def _stream_video(video_name : str, request : Request):
     """ returns a partial response with bytes from the request video file """
 
     if request is None:
@@ -182,13 +205,12 @@ def stream_video(video_name : str, request : Request):
         return Response(data, status_code=constants_.status_codes.PARTIAL_RESPONSE, headers=headers)
 
 
-def get_video(video_name : tuple, request : Request):
+def _get_video(video_name : tuple, request : Request):
     """ Returns a full video with a 200 request, this is used to transer .ts video files for hls"""
 
-    (dire, file) = video_name
+    name_check(video_name)
 
-    name_check(dire)
-    name_check(file)
+    (dire, file) = video_name
 
     video_path = get_clean_name(os.path.join(dire, file), constants_.STATIC_VIDEO_PATH)
 
@@ -200,8 +222,12 @@ def get_video(video_name : tuple, request : Request):
     headers={
             "Accept-Ranges" : "bytes",
             "Content-Range" : f"bytes {0}-{total_response_size}/{total_response_size}",
-            "Content-Type"  : "video/ts"
+            "Content-Type"  : "video/ts",
+            "Content-Disposition": 'attachment; filename="{}"'.format(file),
         }
+
+    if video_path.endswith(".vtt"):
+        headers["Content-Type"] = "text/vtt"
 
     if request.method == "HEAD":
         return headers 
@@ -214,38 +240,24 @@ def get_video(video_name : tuple, request : Request):
         return Response(data, status_code=constants_.status_codes.RESPONSE, headers=headers) 
 
 
-def get_m3u8(file : str, request : Request):
-    
-    file = get_clean_name_or_die(file, constants_.STATIC_M3U8_PATH)
+def _get_m3u8(m3u8_path : tuple, request : Request):
 
-    return FileResponse(file, status_code=constants_.status_codes.RESPONSE)
+    name_check(m3u8_path)
 
+    (dire, file) = m3u8_path
 
-def static_lookup(file_hash : str):
-    
-    LOGGER.error("This endpoint is depricated")
-    raise Exception("Depricated endpoint")
+    headers={
+            "Accept-Ranges" : "bytes",
+            "Content-Type"  : "application/vnd.apple.mpegurl",
+            "Content-Disposition": 'attachment; filename="{}"'.format(file),
+        }
 
-    # ensure only hexadeciaml is given 
-    file_hash = reg.IS_HEXADECIMAL.match(file_hash)
+    if request.method == "HEAD":
+        return headers
 
-    if not file_hash:
-        raise exceptions.API_404_NOT_FOUND_EXCEPTION
+    m3u8_path = get_clean_name(os.path.join(dire, file), constants_.STATIC_M3U8_PATH)
 
-    # get the match 
-    hexadecimal = file_hash.group(1)
-
-    # convert into bytes 
-    digest = bytes.fromhex(hexadecimal)
-
-    # look for the file record in the database 
-    file = database.methods.get_file_by_hash(digest)
-
-    # return the file information 
-    file_info_json = file.dict()
-    file_info_json["filename"] = hexadecimal + constants_.mime_ext_lookup.get(file.mime, "")
-
-    return file_info_json
+    return FileResponse(m3u8_path, status_code=constants_.status_codes.RESPONSE, headers=headers)
 
 
 
@@ -329,44 +341,40 @@ def add_file_to_database(sha256 : bytes, file_size : int, mime : int, delete_on_
 def process_video(data):
     """ passed into a worker queue to split and encode a video into ts files, and then creates the m3u8 file """
 
+    source_video = data['file_path']
+    output_dir   = data['output']
+    ts_url       = data['ts_url']
+    m3u8_url     = data['m3u8_url']
+
     try:
 
-        m3u8 = file_handling.video_handling.split_video(data["file_path"], data["output"])
+        m3u8 = file_handling.video_handling.split_video(source_video, output_dir, 6, ts_url, m3u8_url, m3u8_url)
 
-    except Exception as e:
+    except exceptions.FFMPEG_Exception as e:
 
         LOGGER.error(e)
         
-        util.remove_file(data["file_path"])
+        util.remove_file(source_video)
 
         return 
 
-    util.rename_file(m3u8, data["m3u8_output"], replace=True)
+    hash = os.path.basename(output_dir)
+    m3u8_directory = os.path.join(constants_.STATIC_M3U8_PATH, hash[0:2], hash)
+    
+    util.create_directory(m3u8_directory)
 
-    lines = []
+    util.rename_file(m3u8[0], os.path.join(m3u8_directory, "master.m3u8"), replace=True)
+    util.rename_file(m3u8[1], os.path.join(m3u8_directory, "index.m3u8") , replace=True)
 
-    with open(data["m3u8_output"], "r") as reader:
-
-        for line in reader:
-
-            if reg.IS_TS_FILENAME.match(line):
-
-                lines.append(data["ts_url"] + line)
-                continue
-
-            lines.append(line)
-
-    with open(data["m3u8_output"], "w") as writer:
-
-        writer.writelines(lines)
+    if len(m3u8) == 3:
+        util.rename_file(m3u8[2], os.path.join(m3u8_directory, "index_vtt.m3u8") , replace=True)
 
     try:
         
         # it's pretty dumb that this will throw multiple arg error for 'mime'
-        if 'mime' in data['video_info']:
-            del data['video_info']['mime']
+        del data['video_info']['mime']
 
-        add_file_to_database(data["sha256_bytes"], data["file_size"], data["mime"], data["file_path"], **data["video_info"])
+        add_file_to_database(data["sha256_bytes"], data["file_size"], data["mime"], source_video, **data["video_info"])
 
     except Exception as e:
 
@@ -521,8 +529,9 @@ async def process_file_upload(file : UploadFile):
     data = {
         "file_path"    : filename,
         "output"       : ts_folder,
-        "m3u8_output"  : os.path.join(constants_.STATIC_M3U8_PATH, sha256_hex[0:2], sha256_hex + ".m3u8"),
-        "ts_url"       : "http://{0}/static/v/{1}?ts=".format(config.get((), "server_address"), sha256_hex),
+        "m3u8_output"  : os.path.join(constants_.STATIC_M3U8_PATH, sha256_hex[0:2], sha256_hex),
+        "ts_url"       : "http://{0}/static/v/{1}?ts={2}".format(config.get((), "server_address"), sha256_hex, '{}'),
+        "m3u8_url"     : "http://{0}/static/m3u8/{1}?ts={2}".format(config.get((), "server_address"), sha256_hex, '{}'),
         "sha256_bytes" : sha256_bytes,
         "file_size"    : file_size,
         "mime"         : mime,
@@ -533,12 +542,46 @@ async def process_file_upload(file : UploadFile):
 
         
 
+def get_thumbnail(path, request):
+    
+    if isinstance(path, tuple):
 
+        raise exceptions.API_404_NOT_FOUND_EXCEPTION
+
+    return _get_thumbnail(path, request)
+
+
+def get_image(path, request):
+
+    if isinstance(path, tuple):
+
+        raise exceptions.API_404_NOT_FOUND_EXCEPTION
+
+    return _get_image(path, request) 
+
+
+def get_video(path, request):
+
+    if isinstance(path, tuple):
+
+        return _get_video(path, request)
+
+    return _stream_video(path, request) 
+
+
+def get_m3u8(path, request):
+    
+    if isinstance(path, tuple):
+
+        return _get_m3u8(path, request) 
+
+    raise exceptions.API_404_NOT_FOUND_EXCEPTION
+    
 
 CATEGORY_MAP = {
-    "t" : get_thumbnail,
-    "i" : get_image,
-    "v" : stream_video,
+    "t"    : get_thumbnail,
+    "i"    : get_image,
+    "v"    : get_video, 
     "m3u8" : get_m3u8
 }
 

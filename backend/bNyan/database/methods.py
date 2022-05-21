@@ -201,6 +201,8 @@ def create_tag(tag_ : str):
 
     with Session.begin() as session:
 
+        flag1 = True 
+
         result1 = session.query(TBL_Subtag).filter_by(subtag = tag).first()
         
         if not result1:
@@ -208,8 +210,12 @@ def create_tag(tag_ : str):
             result1 = TBL_Subtag(subtag = tag) 
             session.add(result1)
             session.flush()
+            
+            flag1 = False 
 
             
+        flag2 = True  
+
         result2 = session.query(TBL_Namespace).filter_by(namespace = namespace_).first()
         
         if not result2:
@@ -217,6 +223,25 @@ def create_tag(tag_ : str):
             result2 = TBL_Namespace(namespace = namespace_)
             session.add(result2)
             session.flush()
+
+            flag2 = False  
+
+        # avoid getting an error trying to add a tag 
+        # if both the subtag and namespace already exist, just search for a tag
+        if flag1 and flag2:
+
+            result3 = session.query(TBL_Tags) \
+                .filter_by(subtag_id = result1.subtag_id) \
+                .filter_by(namespace_id = result2.namespace_id).first()
+
+            if result3:
+                return models.Tag(
+                    tag_id       = result3.tag_id,
+                    subtag_id    = result3.subtag_id,
+                    namespace_id = result3.namespace_id,
+                    tag          = tag,
+                    namespace    = namespace_
+                    )
 
 
         new_tag = TBL_Tags(

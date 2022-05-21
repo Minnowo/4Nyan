@@ -435,19 +435,76 @@ def get_video_information_from_ffmpeg_lines( lines ):
 
 
 
-def split_video(video_path : str, output_directory : str, segment_size : int = 6) -> str:
-    """ process the given video creating an m3u8 files ready for hls, returns the m3u8 path"""
+# def split_video(video_path : str, output_directory : str, segment_size : int = 6) -> str:
+#     """ process the given video creating an m3u8 files ready for hls, returns the m3u8 path"""
+
+#     ff_args = [C.FFMPEG_PATH, '-y', '-v', 'error',
+#                 '-i', video_path, 
+#                 '-c:v', 'libx264',
+#                 '-c:a','aac', '-ac', '2',
+#                 '-preset','veryfast',
+#                 '-f', 'hls', '-hls_time', str(segment_size),
+#                 '-hls_playlist_type','event', # unsure what i want this to be https://www.rfc-editor.org/rfc/rfc8216#section-4.3.1.1
+#                                               # ctrl + f EXT-X-PLAYLIST-TYPE
+#                 '-hls_list_size', '0',
+#                 os.path.join(output_directory, '0')]
+
+
+#     process = subprocess.Popen( ff_args, bufsize = 10**5, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+    
+#     ( stdout, stderr ) = util.subprocess_communicate( process )
+    
+#     data_bytes = stderr
+    
+#     if len( data_bytes ) != 0:
+        
+#         raise exceptions.FFMPEG_Exception( non_failing_unicode_decode( data_bytes, 'utf-8' ) )
+        
+    
+#     del process
+    
+#     return os.path.join(output_directory, '0')
+
+
+
+def split_video(video_path : str, output_directory : str, segment_size : int, ts_url : str, vtt_url : str, m3u8_url : str) -> str:
+    """ 
+    process the given video creating an m3u8 files ready for hls, returns the m3u8 path 
+    
+    video_path : the source video path -> str
+    output_directory : the output directory of all the files (assumes empty) -> str
+    segment_size : the size of each ts file in seconds -> int
+    ts_url : the url for ts files, it should include a format template so ts_url.format(ts_filename) adds the path in the correct spot -> str
+    vtt_url : the url for vtt files, it should include a format template so vtt_url.format(vtt_filename) adds the path in the correct spot-> str
+    m3u8_url : the url for m3u8 files, it should include a format template so m3u8_url.format(m3u8_filename) adds the path in the correct spot -> str
+    """
 
     ff_args = [C.FFMPEG_PATH, '-y', '-v', 'error',
+
                 '-i', video_path, 
+
                 '-c:v', 'libx264',
-                '-c:a','aac', '-ac', '2',
-                '-preset','veryfast',
-                '-f', 'hls', '-hls_time', str(segment_size),
-                '-hls_playlist_type','event', # unsure what i want this to be https://www.rfc-editor.org/rfc/rfc8216#section-4.3.1.1
-                                              # ctrl + f EXT-X-PLAYLIST-TYPE
-                '-hls_list_size', '0',
-                os.path.join(output_directory, '0')]
+                '-c:a','aac', 
+                '-c:s', 'webvtt',
+                '-ac', '2',
+
+                '-keyint_min', '48',
+
+                # '-preset','superfast',   # this seems to break the segment size
+                # '-threads', '1',         # reduce cpu but greatly increase time 
+                '-crf', '34',              # unsure what I want for this, likely will be based on file size 
+
+                '-f', 'hls', 
+                '-hls_time', str(segment_size),
+                '-hls_playlist_type','vod', 
+                '-hls_flags', 'independent_segments',
+                '-hls_segment_type', 'mpegts',
+                                              
+                '-hls_segment_filename', os.path.join(output_directory, '%02d.ts'),
+
+                '-master_pl_name', 'master.m3u8',
+
+                 os.path.join(output_directory, 'index.m3u8')]
 
 
     process = subprocess.Popen( ff_args, bufsize = 10**5, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
@@ -460,8 +517,92 @@ def split_video(video_path : str, output_directory : str, segment_size : int = 6
         
         raise exceptions.FFMPEG_Exception( non_failing_unicode_decode( data_bytes, 'utf-8' ) )
         
-    
     del process
+
+    subs_vtt   = os.path.join(output_directory, "index_vtt.m3u8")
+    index_m3u8 = os.path.join(output_directory, "index.m3u8")
+    master     = os.path.join(output_directory, "master.m3u8")
+
+    subs_exist = os.path.isfile(subs_vtt)
+
+    # if the video had subtitles, this will exist,
+    # so rename them and fix the file 
+    if subs_exist:
+        
+        lines    = []
+        new_name = 0
+        with open(subs_vtt, "r") as reader:
+
+            for line in reader:
+
+                if not line.endswith('.vtt\n'):
+                    lines.append(line)
+                    continue 
+
+                o_name = os.path.join(output_directory, line.rstrip())
+                n_name = "{0:02d}.vtt".format(new_name)
+
+                util.rename_file(o_name, os.path.join(output_directory, n_name), replace=True)
+
+                # assume good input, it's the callers fault if this cannot happen
+                lines.append(vtt_url.format(n_name) + "\n")
+
+                new_name += 1
+
+        with open(subs_vtt, "w") as writer:
+
+            writer.writelines(lines)
     
-    return os.path.join(output_directory, '0')
+
+    # apply required changes to the main ts m3u8 file 
+    lines = []
+    with open(index_m3u8, "r") as reader:
+
+        for line in reader:
+
+            if not line.endswith('.ts\n'):
+                lines.append(line)
+                continue 
+
+            lines.append(ts_url.format(line.rstrip()) + "\n")
+            
+    with open(index_m3u8, "w") as writer:
+
+        writer.writelines(lines)
+
+    # template for subtitles in m3u8 file
+    m3u8_sub_template = '#EXT-X-MEDIA:TYPE=SUBTITLES,URI="{}",GROUP-ID="{}",LANGUAGE="{}",NAME="{}",AUTOSELECT=YES\n'
+
+    # apply required changes to master.m3u8
+    lines = []
+    with open(master, "r") as reader:
+
+        for line in reader:
+            
+            if subs_exist and line.startswith("#EXT-X-STREAM-INF:"):
+                lines.append(m3u8_sub_template.format(m3u8_url.format('index_vtt.m3u8'), "subs", "en", "subtitle track 1"))
+                lines.append(line.rstrip() + ',SUBTITLES="subs"\n')
+                continue 
+
+            if not line.endswith('.m3u8\n'):
+                lines.append(line)
+                continue
+            
+            lines.append(m3u8_url.format(line.rstrip()) + "\n")
+                
+    with open(master, "w") as writer:
+
+        writer.writelines(lines)
+
+
+    result = [
+        master,
+        index_m3u8
+        ]
+
+    if subs_exist:
+        
+        result.append(subs_vtt)
+
+    return result 
 

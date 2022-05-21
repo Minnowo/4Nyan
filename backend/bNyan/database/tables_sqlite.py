@@ -44,7 +44,7 @@ class TBL_Tag_Map(Base):
     __tablename__ = "tbl_tag_map"
 
     hash_id = Column(Integer, ForeignKey('tbl_hash.hash_id'), primary_key=True)
-    tag_id  = Column(Integer, ForeignKey('tbl_tags.tag_id'), primary_key=True)
+    tag_id  = Column(Integer, ForeignKey('tbl_tags.tag_id') , primary_key=True)
 
 
 class TBL_Namespace(Base):
