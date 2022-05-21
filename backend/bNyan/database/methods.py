@@ -429,7 +429,7 @@ def search_files(search : models.FileSearch):
 
     with Session.begin() as session:
        
-        result = session.query(TBL_Hash).join(TBL_Tag_Map)#.join(TBL_Tags)
+        result = session.query(TBL_Hash)#.join(TBL_Tags)
 
         if search.hash_ids:
 
@@ -441,15 +441,7 @@ def search_files(search : models.FileSearch):
 
         if search.tag_ids:
 
-            result = result.filter(TBL_Tags.tag_id.in_(search.tag_ids))
-
-        if search.namespace_ids:
-
-            result = result.filter(TBL_Tags.namespace_id.in_(search.namespace_ids))
-
-        if search.subtag_ids:
-
-            result = result.filter(TBL_Tags.subtag_id.in_(search.subtag_ids))
+            result = result.join(TBL_Tag_Map).filter(TBL_Tag_Map.tag_id.in_(search.tag_ids))
 
         if search.sort_asc:
 

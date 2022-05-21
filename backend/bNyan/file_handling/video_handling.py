@@ -554,7 +554,7 @@ def split_video(video_path : str, output_directory : str, segment_size : int, ts
             writer.writelines(lines)
     
 
-    # apply required changes to the main ts m3u8 file 
+    # apply required changes to the index.m3u8 file 
     lines = []
     with open(index_m3u8, "r") as reader:
 

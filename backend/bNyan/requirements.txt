@@ -4,10 +4,13 @@ uvicorn~=0.17.6
 fastapi~=0.75.0
 fastapi-login~=1.8.0
 sqlalchemy~=1.4.32
-psycopg2~=2.9.3
 bcrypt~=3.2.0
 python-multipart~=0.0.5
+numpy
+pillow
+opencv-python 
 
+# psycopg2~=2.9.3
 
 # https://github.com/Minnowo/image-size-reader
 image-size-reader~=0.0.2
