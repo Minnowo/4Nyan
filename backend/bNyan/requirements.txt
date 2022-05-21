@@ -6,11 +6,10 @@ fastapi-login~=1.8.0
 sqlalchemy~=1.4.32
 bcrypt~=3.2.0
 python-multipart~=0.0.5
-numpy
-pillow
-opencv-python 
+numpy~=1.21.6
+pillow~=9.1.1
+opencv-python~=4.5.5.64
 
-# psycopg2~=2.9.3
-
+# NOTE - This is required it's just not on pypi, install manually using 'python setup.py install' after cloning repo
 # https://github.com/Minnowo/image-size-reader
-image-size-reader~=0.0.2
+# image-size-reader~=0.0.2
