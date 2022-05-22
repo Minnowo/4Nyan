@@ -193,6 +193,8 @@ async def create_item(request : Request, data: UploadFile = File(...) ): #, user
 
     data_size = util.parse_int(request.headers.get('content-length', None), None)
 
+    print(request)
+
     if not data or not data_size:
         raise exceptions.API_400_BAD_REQUEST_EXCEPTION
 

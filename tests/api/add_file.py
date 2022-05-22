@@ -25,11 +25,20 @@ def upload_file(path):
         print("file does not exist")
         return 
 
-    payload = {
-        'data' : open(path, 'rb').read()
+    headers = {
+            "accept" : "applications/json",
+            # "content-type" : "multipart/form-data",
+            "Content-Disposition": 'attachment; filename="{}"'.format(os.path.basename(path)),
     }
 
-    response = requests.post(URL, files=payload)
+    payload = {
+        'data' : open(path, 'rb') #.read()
+    }
+
+    response = requests.post(URL, files=payload, headers=headers)
+
+    print(response.headers)
+    print(response.encoding)
 
     print(response.status_code)
     print(response.text)
@@ -67,6 +76,8 @@ def create_map(file_id, tag_id):
     print(response.status_code)
     print(response.text)
 
-# upload_file("C:\\Users\\minno\\Documents\\GIT_CLONES\\miagedl\\output\\1.png")
+# upload_file("C:\\Users\\minno\\Downloads\\cat.jpg")
 # create_tag('category:video')
-create_map(0,6)
+# create_map(0,6)
+create_map(13, 9)
+# create_tag("category:pictures")

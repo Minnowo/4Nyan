@@ -313,6 +313,8 @@ def add_file_to_database(sha256 : bytes, file_size : int, mime : int, delete_on_
 
             for t in kwargs["tags"]:
 
+                LOGGER.info("Trying to add tag '{}' to file: '{}'".format(t, sha256.hex()))
+
                 try:
                     
                     tag = database.Methods.create_tag(t)
