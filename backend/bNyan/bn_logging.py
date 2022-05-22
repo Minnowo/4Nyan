@@ -16,7 +16,7 @@ def get_logger(name : str, log_file : str = "", log_level = logging.DEBUG):
     
     if log_file:
         util.create_directory_from_file_name(log_file)
-        file_handler = logging.FileHandler(log_file, mode='a')
+        file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
     

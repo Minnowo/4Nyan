@@ -12,11 +12,12 @@ from ..text import non_failing_unicode_decode
 
 
 from .audio_handling import parse_ffmpeg_audio
-
+from .image_handling import generate_save_image_thumbnail, THUMBNAIL_SCALE_DOWN_ONLY
 from re import search, match
  
 import subprocess
 import os.path 
+import time 
 
 # very big thanks to https://github.com/hydrusnetwork/hydrus
 # 
@@ -511,10 +512,13 @@ def split_video(video_path : str, output_directory : str, segment_size : int, ts
     process = subprocess.Popen( ff_args, bufsize = 10**5, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
     
     LOGGER.info("Running FFMPEG with args: {}".format(ff_args))
-    
+    start_time = time.perf_counter()
+
     ( stdout, stderr ) = util.subprocess_communicate( process )
     
     data_bytes = stderr
+
+    LOGGER.info("FFMPEG finished after {} seconds".format(time.perf_counter() - start_time))
     
     if len( data_bytes ) != 0:
 
@@ -522,7 +526,6 @@ def split_video(video_path : str, output_directory : str, segment_size : int, ts
         
         raise exceptions.FFMPEG_Exception( non_failing_unicode_decode( data_bytes, 'utf-8' ) )
         
-    LOGGER.info("FFMPEG finished")
 
     del process
 
@@ -613,3 +616,95 @@ def split_video(video_path : str, output_directory : str, segment_size : int, ts
 
     return result 
 
+
+
+
+def generate_thumbnail(source_path, dest_path, thumbsize):
+
+    util.create_directory_from_file_name(dest_path)
+
+    dest_jpg = dest_path + ".jpg" # ffmpeg really doesn't like .thumb as an extension
+
+    # looking for png/jpeg video streams from embeded thumbnails 
+    # if we cannot find them we will make our own thumbnail 
+    ff_args = [
+        C.FFMPEG_PATH, '-y', '-v', 'error',
+        '-i', str(source_path),
+        '-c', 'copy',
+        '-map', '0:v',
+        '-map', '-0:V',
+        '-vframes', '1',
+        dest_jpg 
+    ]
+
+    process = subprocess.Popen( ff_args, bufsize = 10**5, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+    
+    LOGGER.info("Generating video thumbnail for: {}".format(source_path))
+    LOGGER.info("Running FFMPEG with args: {}".format(ff_args))
+
+    start_time = time.perf_counter()
+
+    ( stdout, stderr ) = util.subprocess_communicate( process )
+    
+    data_bytes = stderr
+    
+    fallback = False 
+
+    LOGGER.info("FFMPEG finished after {} seconds".format(time.perf_counter() - start_time))
+
+    if len( data_bytes ) != 0:
+        
+
+        fallback = data_bytes == b'Output file #0 does not contain any stream\r\n'
+
+        if not fallback:
+
+            LOGGER.info("FFMPEG failed with exit: {}".format(non_failing_unicode_decode( data_bytes, 'utf-8' )))
+
+            raise exceptions.FFMPEG_Exception(non_failing_unicode_decode( data_bytes, 'utf-8' ) )
+        
+    del process
+
+
+    if not fallback:
+
+        try:
+        
+            return generate_save_image_thumbnail(dest_jpg, dest_path, C.IMAGE_JPEG, thumbsize, THUMBNAIL_SCALE_DOWN_ONLY)
+        
+        finally:
+            util.remove_file(dest_jpg)
+
+    LOGGER.info("Could not extract existing thumbnail. Generating new thumbnail...")
+
+    # just using the standard method for getting thumbnails with ffmpeg, don't really care that much what it spits out
+    ff_args = [
+        C.FFMPEG_PATH, '-y', '-v', 'error',
+        '-i', str(source_path), 
+        '-vf',  'thumbnail',
+        '-frames:v', '1', 
+        dest_jpg # ffmpeg really doesn't like .thumb as an extension
+    ]
+
+    process = subprocess.Popen( ff_args, bufsize = 10**5, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+    
+    LOGGER.info("Running FFMPEG with args: {}".format(ff_args))
+
+    ( stdout, stderr ) = util.subprocess_communicate( process )
+    
+    data_bytes = stderr
+    
+    if len( data_bytes ) != 0:
+        
+        LOGGER.info("FFMPEG failed with exit: {}".format(non_failing_unicode_decode( data_bytes, 'utf-8' )))
+
+        raise exceptions.FFMPEG_Exception(non_failing_unicode_decode( data_bytes, 'utf-8' ) )
+        
+    del process
+
+    try:
+        
+        return generate_save_image_thumbnail(dest_jpg, dest_path, C.IMAGE_JPEG, thumbsize, THUMBNAIL_SCALE_DOWN_ONLY)
+    
+    finally:
+        util.remove_file(dest_jpg)

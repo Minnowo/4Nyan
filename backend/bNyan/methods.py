@@ -18,6 +18,7 @@ from . import database
 from . import models 
 from . import bn_logging
 from . import config 
+from . import text
 
 LOGGER = bn_logging.get_logger(constants_.BNYAN_METHODS[0], constants_.BNYAN_METHODS[1])
 
@@ -149,23 +150,31 @@ def get_static_path_from_mime(mime : int):
 def _get_image(image_name : str, request : Request):
     """ returns a FileResponse with the requested image """
 
+    headers = {
+        'content-type' : 'image'
+    }
+
     if request.method == "HEAD":
-        return {}
+        return headers
 
     image_name = get_clean_name_or_die(image_name, constants_.STATIC_IMAGE_PATH)
 
-    return FileResponse(image_name)
+    return FileResponse(image_name, headers=headers)
 
 
 def _get_thumbnail(image_name : str, request : Request):
     """ returns a FileResponse with the requested image """
 
+    headers = {
+        'content-type' : 'image' # important for direct links to show the actual image
+    }
+
     if request.method == "HEAD":
-        return {}
+        return headers
 
     image_name = get_clean_name_or_die(image_name, constants_.STATIC_THUMBNAIL_PATH)
 
-    return FileResponse(image_name)
+    return FileResponse(image_name, headers=headers)
 
 
 def _stream_video(video_name : str, request : Request):
@@ -280,15 +289,24 @@ def generate_thumbnail(data):
         dst = data.get("dst")
         mime = data.get("mime")
 
-        if not file_handling.image_handling.generate_save_image_thumbnail(
-            src, dst, mime, 
-            constants_.THUMBNAIL_SIZE, 
-            file_handling.image_handling.THUMBNAIL_SCALE_DOWN_ONLY):
-            LOGGER.warning("failed to generate thumbnail for: " + src)
+        if mime == constants_.mime_types.UNDETERMINED_VIDEO: # video 
+
+            if not file_handling.video_handling.generate_thumbnail(src, dst, constants_.THUMBNAIL_SIZE):
+    
+                LOGGER.warning("Failed to generate thumbnail for: {}".format(src))
+
+        elif not file_handling.image_handling.generate_save_image_thumbnail(src, dst, mime, 
+                    constants_.THUMBNAIL_SIZE, file_handling.image_handling.THUMBNAIL_SCALE_DOWN_ONLY):
+
+            LOGGER.warning("Failed to generate thumbnail for: ".format(src))
+
+    except exceptions.FFMPEG_Exception as e:
+
+        LOGGER.warning("FFMPEG exception while generating thumbnail for {}. -> {}".format(src, e))
 
     except Exception as e:
 
-        LOGGER.warning(e)
+        LOGGER.error("Error while generating thumbnail for {}. -> {}".format(src, e))
 
 
 
@@ -313,7 +331,7 @@ def add_file_to_database(sha256 : bytes, file_size : int, mime : int, delete_on_
 
             for t in kwargs["tags"]:
 
-                LOGGER.info("Trying to add tag '{}' to file: '{}'".format(t, sha256.hex()))
+                LOGGER.info("Adding tag '{}' to file: '{}'".format(t, sha256.hex()))
 
                 try:
                     
@@ -325,13 +343,13 @@ def add_file_to_database(sha256 : bytes, file_size : int, mime : int, delete_on_
                     continue 
 
                 except Exception as e:
-                    LOGGER.error("Exception thrown adding tag to file " + e.__repr__())
+                    LOGGER.error("Exception thrown adding tag to file -> {}".format(e.__repr__()))
 
 
 
     except HTTPException as e:
         
-        LOGGER.warning("error thrown adding file to the database -> {}".format(e))
+        LOGGER.warning("Exception thrown adding file to the database -> {}".format(e))
 
         util.remove_file(delete_on_httperr) # delete the temp file 
 
@@ -347,6 +365,7 @@ def process_video(data):
     output_dir   = data['output']
     ts_url       = data['ts_url']
     m3u8_url     = data['m3u8_url']
+    sha256_hex   = data['sha256_hex']
 
     try:
 
@@ -370,6 +389,14 @@ def process_video(data):
 
     if len(m3u8) == 3:
         util.rename_file(m3u8[2], os.path.join(m3u8_directory, "index_vtt.m3u8") , replace=True)
+
+    tdata = {
+            "src" : source_video,
+            "dst" : os.path.join(constants_.STATIC_THUMBNAIL_PATH, sha256_hex[0:2], sha256_hex + ".thumb"),
+            "mime" : constants_.mime_types.UNDETERMINED_VIDEO, 
+        }
+
+    threading_.append_worker_data(constants_.THREAD_THUMBNAIL, tdata, generate_thumbnail)
 
     try:
         
@@ -498,7 +525,7 @@ async def process_file_upload(file : UploadFile):
 
         tdata = {
             "src" : filename,
-            "dst" : os.path.join(constants_.STATIC_THUMBNAIL_PATH, sha256_hex[0:2], sha256_hex + file_ext),
+            "dst" : os.path.join(constants_.STATIC_THUMBNAIL_PATH, sha256_hex[0:2], sha256_hex + ".thumb"),
             "mime" : mime, 
         }
 
@@ -534,6 +561,7 @@ async def process_file_upload(file : UploadFile):
         "m3u8_output"  : os.path.join(constants_.STATIC_M3U8_PATH, sha256_hex[0:2], sha256_hex),
         "ts_url"       : "http://{0}/static/v/{1}?ts={2}".format(config.get((), "server_address"), sha256_hex, '{}'),
         "m3u8_url"     : "http://{0}/static/m3u8/{1}?ts={2}".format(config.get((), "server_address"), sha256_hex, '{}'),
+        "sha256_hex"   : sha256_hex,
         "sha256_bytes" : sha256_bytes,
         "file_size"    : file_size,
         "mime"         : mime,

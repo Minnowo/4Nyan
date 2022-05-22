@@ -72,7 +72,7 @@ THREAD_FFMPEG = "ffmpeg worker"
 THREAD_THUMBNAIL = "thumbnail worker"
 
 ######## thumbnail ########
-THUMBNAIL_SIZE = (125, 150)
+THUMBNAIL_SIZE = (256, 256)
 
 ######## Datebase ########
 

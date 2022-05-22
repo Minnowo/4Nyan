@@ -29,7 +29,7 @@ class File(BaseModel):
 
 class File_Response(File):
 
-    static_url : Tuple[str] = None 
+    static_url : dict = None 
 
 
 

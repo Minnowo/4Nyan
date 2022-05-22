@@ -15,6 +15,7 @@ from .. import exceptions
 from .. import bn_logging
 from .. import constants_ as C
 
+LOGGER = bn_logging.get_logger(C.BNYAN_IMAGE_HANDLING[0], C.BNYAN_IMAGE_HANDLING[1])
 
 try:
 
@@ -37,14 +38,15 @@ except ImportError:
 
     OPENCV_OK = False
 
-LOGGER = bn_logging.get_logger(C.BNYAN_IMAGE_HANDLING[0], C.BNYAN_IMAGE_HANDLING[1])
+    LOGGER.warning("Failed to import opencv-python (cv2), OPENCV_OK = False")
+
 
 
 THUMBNAIL_SCALE_DOWN_ONLY   = 1
 THUMBNAIL_SCALE_TO_FIT      = 2
 THUMBNAIL_SCALE_TO_FILL     = 3
 
-JPEG_QUALITY  = 92
+JPEG_QUALITY  = 90
 
 PIL_ONLY_MIMETYPES = { C.IMAGE_GIF, C.IMAGE_ICON }
 PIL_SRGB_PROFILE = PIL_Image_Cms.createProfile( 'sRGB' )
@@ -820,7 +822,11 @@ def generate_save_image_thumbnail(source_path : str,
 
     image_size = isr.get_image_size(source_path)
 
+    LOGGER.info("Generating thumbnail for {}".format(source_path))
+
     if image_size == (0, 0):
+
+        LOGGER.warning("Image-Size-Reader could not get image size for {}. Falling back to PIL/cv2".format(source_path))
 
         # we're gonna have to load the image and see if we can get the size that way
         if OPENCV_OK and mime not in PIL_ONLY_MIMETYPES:
@@ -841,6 +847,7 @@ def generate_save_image_thumbnail(source_path : str,
 
         # assume the size cannot be gotten, we tried
         if width <= 0 or height <= 0:
+            LOGGER.warning("Could not get image size using PIL/cv2 for {}. Thumbnail will not be made".format(source_path))
             return False
 
         image_size = (width, height)
@@ -849,6 +856,8 @@ def generate_save_image_thumbnail(source_path : str,
     (clip_rect, target_resolution) = get_thumbnail_resolution_and_clip_region(image_size,
                                                                               thumbnail_size,
                                                                               thumbnail_scale_type)
+
+    LOGGER.info("Determined image size: {}. Target thumb resoltuion: {} for {}".format(image_size, target_resolution, source_path))
 
     try:
 
@@ -859,6 +868,8 @@ def generate_save_image_thumbnail(source_path : str,
 
         return True
 
-    except:
+    except Exception as e:
+
+        LOGGER.error("Could not generate thumbnail -> {}".format(e))
 
         return False

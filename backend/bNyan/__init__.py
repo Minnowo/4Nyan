@@ -52,21 +52,6 @@ app.add_middleware(
 
 
 
-# DEBUG STUFF 
-@app.get('/get_file')
-async def getfile(request : Request, file_id : str = ""):
-    
-    raise exceptions.API_404_NOT_FOUND_EXCEPTION
-
-    if not file_id:
-        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
-
-    print(hashlib.sha256(file_id.encode()).digest())
-    print(hashlib.sha256(file_id.encode()).digest().hex())
-    print(bytes.fromhex(hashlib.sha256(file_id.encode()).digest().hex()))
-
-    return methods.static_lookup(file_id)
-
 @app.get("/search/get_file_tags")
 async def search_tags(request : Request, fid : List[int] = Query(None), fh : List[str] = Query(None)):
 
@@ -127,33 +112,32 @@ async def search_files(request : Request,
         # builds the static url,
         # 'http://' + '0.0.0.0:700' + '/' + 'static/i' + 'filename' + '.ext'
 
-        leading = "http://" + config.get((), "server_address") + "/"
+        leading = "http://{}/".format(config.get((), "server_address"))
         ending  = file.hash + constants_.mime_ext_lookup.get(file.mime, "") 
 
-        urls    = [ 
-            leading + methods.get_static_route_from_mime(file.mime) + "/" + ending,
-            leading + constants_.STATIC_THUMBNAIL_ROUTE + "/" + ending
-        ]
+        urls    = {
+            "content" : [ leading + methods.get_static_route_from_mime(file.mime) + "/" + ending ],
+            "thumbs"  : [ leading + constants_.STATIC_THUMBNAIL_ROUTE + "/" + file.hash + ".thumb" ],
+            "subs"    : []
+        }
 
         if file.mime in constants_.VIDEO_MIMES:
             
             m3u8_dir = os.path.join(constants_.STATIC_M3U8_PATH, file.hash[0:2], file.hash)
             
-            if os.path.isdir(m3u8_dir):
+            if os.path.isfile(os.path.join(m3u8_dir, "master.m3u8")):
 
-                if os.path.isfile(os.path.join(m3u8_dir, "master.m3u8")):
+                urls["content"].append(leading + constants_.STATIC_M3U8_ROUTE + "/" + file.hash + "?ts=master.m3u8")
 
-                    urls.append(leading + constants_.STATIC_M3U8_ROUTE + "/" + file.hash + "?ts=master.m3u8")
+            if os.path.isfile(os.path.join(m3u8_dir, "index.m3u8")):
 
-                if os.path.isfile(os.path.join(m3u8_dir, "index.m3u8")):
+                urls["content"].append(leading + constants_.STATIC_M3U8_ROUTE + "/" + file.hash + "?ts=index.m3u8")
 
-                    urls.append(leading + constants_.STATIC_M3U8_ROUTE + "/" + file.hash + "?ts=index.m3u8")
+            if os.path.isfile(os.path.join(m3u8_dir, "index_vtt.m3u8")):
 
-                if os.path.isfile(os.path.join(m3u8_dir, "index_vtt.m3u8")):
+                urls["subs"].append(leading + constants_.STATIC_M3U8_ROUTE + "/" + file.hash + "?ts=index_vtt.m3u8")
 
-                    urls.append(leading + constants_.STATIC_M3U8_ROUTE + "/" + file.hash + "?ts=index_vtt.m3u8")
-
-        file.static_url = tuple(urls)
+        file.static_url = urls
 
         files.append(file)
         
@@ -192,8 +176,6 @@ async def create_tag(request : Request, tag : Union[str, List[str]]): #, user = 
 async def create_item(request : Request, data: UploadFile = File(...) ): #, user = Depends(auth.manager)):
 
     data_size = util.parse_int(request.headers.get('content-length', None), None)
-
-    print(request)
 
     if not data or not data_size:
         raise exceptions.API_400_BAD_REQUEST_EXCEPTION
@@ -369,20 +351,3 @@ def main():
 
 
 
-
-
-
-
-def m3u8_test():
-
-    from .m3u8 import PlaylistGenerator, VideoSplitter
-
-    output = "D:\\Programming\\.PROJECTS\\4Nyan\\backend\\bNyan\\static\\v\\RnM_S4E1\\"
-    segment_size = 10
-    splitter = VideoSplitter("X:\\ffmpeg\\ffmpeg.exe", "X:\\ffmpeg\\ffprobe.exe")
-    splitter.split_video("D:\\Programming\\.PROJECTS\\4Nyan\\backend\\bNyan\\static\\v\\Rick and Morty - S04E01.mkv", output, segment_size)
-
-    entries = PlaylistGenerator.generate_from_directory("http://192.168.1.149:721/static/v/" + os.path.basename(output), output, segment_size)
-
-    print(entries)
-    return 0
