@@ -2,6 +2,7 @@
 *bin/
 *static/
 *postgres/
+*.idea/
 
 # JetBrains PyCharm and WebStorm stuff
 frontend/.idea
