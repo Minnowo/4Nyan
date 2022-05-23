@@ -151,7 +151,9 @@ def _get_image(image_name : str, request : Request):
     """ returns a FileResponse with the requested image """
 
     headers = {
-        'content-type' : 'image'
+        'accept-range' : 'bytes',
+        'content-type' : 'image/jpeg',
+        'filename' : image_name
     }
 
     if request.method == "HEAD":
@@ -159,14 +161,16 @@ def _get_image(image_name : str, request : Request):
 
     image_name = get_clean_name_or_die(image_name, constants_.STATIC_IMAGE_PATH)
 
-    return FileResponse(image_name, headers=headers)
+    return FileResponse(image_name, headers=headers, media_type="image")
 
 
 def _get_thumbnail(image_name : str, request : Request):
     """ returns a FileResponse with the requested image """
 
     headers = {
-        'content-type' : 'image' # important for direct links to show the actual image
+        'accept-range' : 'bytes',
+        'content-type' : 'image/jpeg', # important for direct links to show the actual image
+        'filename' : image_name
     }
 
     if request.method == "HEAD":
@@ -174,7 +178,7 @@ def _get_thumbnail(image_name : str, request : Request):
 
     image_name = get_clean_name_or_die(image_name, constants_.STATIC_THUMBNAIL_PATH)
 
-    return FileResponse(image_name, headers=headers)
+    return FileResponse(image_name, headers=headers, media_type="image")
 
 
 def _stream_video(video_name : str, request : Request):
@@ -392,7 +396,7 @@ def process_video(data):
 
     tdata = {
             "src" : source_video,
-            "dst" : os.path.join(constants_.STATIC_THUMBNAIL_PATH, sha256_hex[0:2], sha256_hex + ".thumb"),
+            "dst" : os.path.join(constants_.STATIC_THUMBNAIL_PATH, sha256_hex[0:2], sha256_hex + ".jpg"),
             "mime" : constants_.mime_types.UNDETERMINED_VIDEO, 
         }
 
@@ -525,7 +529,7 @@ async def process_file_upload(file : UploadFile):
 
         tdata = {
             "src" : filename,
-            "dst" : os.path.join(constants_.STATIC_THUMBNAIL_PATH, sha256_hex[0:2], sha256_hex + ".thumb"),
+            "dst" : os.path.join(constants_.STATIC_THUMBNAIL_PATH, sha256_hex[0:2], sha256_hex + ".jpg"),
             "mime" : mime, 
         }
 

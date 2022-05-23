@@ -79,5 +79,7 @@ def create_map(file_id, tag_id):
 # upload_file("C:\\Users\\minno\\Downloads\\cat.jpg")
 # create_tag('category:video')
 # create_map(0,6)
-create_map(13, 9)
-# create_tag("category:pictures")
+# create_map(13, 9)
+create_tag("category:pictures")
+for i in range(10):
+    create_map(i, 5)

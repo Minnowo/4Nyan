@@ -117,7 +117,7 @@ async def search_files(request : Request,
 
         urls    = {
             "content" : [ leading + methods.get_static_route_from_mime(file.mime) + "/" + ending ],
-            "thumbs"  : [ leading + constants_.STATIC_THUMBNAIL_ROUTE + "/" + file.hash + ".thumb" ],
+            "thumbs"  : [ leading + constants_.STATIC_THUMBNAIL_ROUTE + "/" + file.hash + ".jpg" ],
             "subs"    : []
         }
 

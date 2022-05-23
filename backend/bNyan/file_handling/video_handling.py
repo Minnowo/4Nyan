@@ -690,9 +690,14 @@ def generate_thumbnail(source_path, dest_path, thumbsize):
     
     LOGGER.info("Running FFMPEG with args: {}".format(ff_args))
 
+    start_time = time.perf_counter()
+
+
     ( stdout, stderr ) = util.subprocess_communicate( process )
     
     data_bytes = stderr
+    
+    LOGGER.info("FFMPEG finished after {} seconds".format(time.perf_counter() - start_time))
     
     if len( data_bytes ) != 0:
         
