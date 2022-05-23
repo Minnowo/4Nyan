@@ -3,6 +3,13 @@
 *static/
 *postgres/
 *.idea/
+*video-test/
+
+*.mp4
+*.mkv
+*.vtt
+*.m3u8
+*.mpd
 
 # JetBrains PyCharm and WebStorm stuff
 frontend/.idea

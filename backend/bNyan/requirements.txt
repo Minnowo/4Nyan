@@ -10,6 +10,6 @@ numpy~=1.21.6
 pillow~=9.1.1
 opencv-python~=4.5.5.64
 
-# NOTE - This is required it's just not on pypi, install manually using 'python setup.py install' after cloning repo
+# NOTE - This is required, install manually using 'python setup.py install' after cloning the repo
 # https://github.com/Minnowo/image-size-reader
 # image-size-reader~=0.0.2

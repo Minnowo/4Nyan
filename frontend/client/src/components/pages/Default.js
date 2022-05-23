@@ -72,18 +72,19 @@ export default function Default(props)
 
                 for(let i = Math.max(max - 25, 0); i < max; i++)
                 {
-                    const value    = content.content[i];
-                    const fullUrl  = value.static_url[0];
-                    const thumbUrl = value.static_url[1];
+                    const value       = content.content[i];
+                    const static_urls = value.static_url;
+
+                    console.log(static_urls);
 
                     const props = {
-                        image : thumbUrl,
+                        image : static_urls.thumbs[0],
                         caption : value.width + " x " + value.height,
                         fileType : null ,
                         style : {
-                            width : "125px",
+                            width : "200px",
                             border : "1px solid white",
-                            "vertical-align" : "middle",
+                            "verticalAlign" : "middle",
 
                             // "display": "flex",
                             // width: "195px",
@@ -95,7 +96,7 @@ export default function Default(props)
                     }
 
                     display.push(
-                    <a key={i} href={fullUrl} target="_blank" rel="noopener noreferrer">
+                    <a key={i} href={static_urls.content[0]} target="_blank" rel="noopener noreferrer">
                         <FileUpload {...props} ></FileUpload>
                     </a>);
                 }

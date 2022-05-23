@@ -708,3 +708,115 @@ def generate_thumbnail(source_path, dest_path, thumbsize):
     
     finally:
         util.remove_file(dest_jpg)
+
+
+
+
+def extract_subs(video_path, output_folder):
+
+    util.create_directory(output_folder)
+
+    # ffprobe arguments to get a csv output of the stream index, codec type and language
+    # this will get us all the subtitle streams to extract 
+    ffp_args = [ 
+        C.FFPROBE_PATH,
+        '-loglevel', 'error',
+        '-select_streams', 's',
+        '-show_entries', 'stream=index:stream=codec_type:stream_tags=language', 
+        '-of', 'csv=p=0', 
+        video_path
+    ]
+
+    process = subprocess.Popen( ffp_args, bufsize = 10**5, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+    
+    LOGGER.info("Extracting subtitles from: {}".format(video_path))
+    LOGGER.info("Running FFPROBE with args: {}".format(ffp_args))
+    start_time = time.perf_counter()
+
+    ( stdout, stderr ) = util.subprocess_communicate( process )
+    
+    err_data_bytes = stderr
+    std_data_bytes = stdout 
+
+    LOGGER.info("FFPROBE finished after {} seconds".format(time.perf_counter() - start_time))
+
+    if len( err_data_bytes ) != 0:
+        
+        LOGGER.info("FFPROBE failed with exit: {}".format(non_failing_unicode_decode( err_data_bytes, 'utf-8' )))
+
+        raise exceptions.FFPROBE_Exception( non_failing_unicode_decode( err_data_bytes, 'utf-8' ) )
+        
+    
+    del process
+
+
+    ff_args = [ 
+        C.FFMPEG_PATH, '-y', '-v', 'error',
+        '-i', str(video_path),
+    ]
+
+    output_map = []
+
+    sub_count = 0
+
+    # split ffprobes output by line
+    for line in std_data_bytes.split():
+
+        try:
+            # read the csv format 
+            (index, stream, name) = line.split(b',')
+
+        except ValueError:
+            continue 
+
+        if stream != b'subtitle':
+            continue 
+        
+        sub_count += 1
+        
+        # decode the index and name
+        index = util.parse_int(index.decode(errors="replace"), None)
+
+        if index is None:
+            continue 
+
+        name  = name.decode('utf-8', errors="replace")
+        oname = os.path.join(output_folder, 'sub-{}.vtt'.format(sub_count))
+
+        # extend ffmpeg arguments 
+        ff_args.extend(['-map', '0:{}'.format(index), oname ])
+
+        # output mapping 
+        output_map.append((index, oname, name))
+
+
+    # no subs, ignore
+    if sub_count == 0:
+        LOGGER.info("Could not find any subtitles")
+        return output_map
+
+    LOGGER.info("Found {} subtitles".format(sub_count))
+    
+    process = subprocess.Popen( ff_args, bufsize = 10**5, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+    
+    LOGGER.info("Running FFMPEG with args: {}".format(ff_args))
+    start_time = time.perf_counter()
+
+    ( stdout, stderr ) = util.subprocess_communicate( process )
+    
+    err_data_bytes = stderr
+
+    LOGGER.info("FFMPEG finished after {} seconds".format(time.perf_counter() - start_time))
+
+    if len( err_data_bytes ) != 0:
+
+        LOGGER.info("FFMPEG failed with exit: {}".format(non_failing_unicode_decode( err_data_bytes, 'utf-8' )))
+        
+        raise exceptions.FFMPEG_Exception( non_failing_unicode_decode( err_data_bytes, 'utf-8' ) )
+        
+    del process
+
+    return output_map
+
+
+
