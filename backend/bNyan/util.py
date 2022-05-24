@@ -179,3 +179,18 @@ def subprocess_communicate( process: subprocess.Popen, timeout : int = 10) -> tu
             
             pass    
 
+
+
+def in_range(item, range : tuple):
+
+    """ 
+    checks if the given number is in the range of the given min and max (inclusive) 
+    
+    item : the number to check
+
+    range : the min and max range as a tuple
+    """
+
+    (min, max) = range 
+
+    return item >= min and item <= max 

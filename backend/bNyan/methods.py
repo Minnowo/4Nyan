@@ -115,28 +115,46 @@ def clean_path(path : str, rout : str, cleans=[reg.INVALID_PATH_CHAR.sub]):
 def get_static_route_from_mime(mime : int):
     """ returns the static route where a file should be accessed via the static url from the given mime type """
     
-    if mime in MT.IMAGE_MIMES:
+    if util.in_range(mime, constants_.mime_types.IMAGE_MIME_RANGE):
         return constants_.STATIC_IMAGE_ROUTE
 
-    if mime in MT.VIDEO_MIMES:
+    if util.in_range(mime, constants_.mime_types.VIDEO_MIME_RANGE):
         return constants_.STATIC_VIDEO_ROUTE
 
-    if mime in  MT.AUDIO_MIMES:
-        return constants_.STATIC_VIDEO_ROUTE
+    if util.in_range(mime, constants_.mime_types.AUDIO_MIME_RANGE):
+        return constants_.STATIC_AUDIO_ROUTE
 
-    return None 
+    # if mime in MT.IMAGE_MIMES:
+    #     return constants_.STATIC_IMAGE_ROUTE
+
+    # if mime in MT.VIDEO_MIMES:
+    #     return constants_.STATIC_VIDEO_ROUTE
+
+    # if mime in  MT.AUDIO_MIMES:
+    #     return constants_.STATIC_VIDEO_ROUTE
+
+    return "None" 
 
 def get_static_path_from_mime(mime : int):
     """ returns the static path where a file should be stored based of the given mime type """
-    
-    if mime in MT.IMAGE_MIMES:
+
+    if util.in_range(mime, constants_.mime_types.IMAGE_MIME_RANGE):
         return constants_.STATIC_IMAGE_PATH
 
-    if mime in MT.VIDEO_MIMES:
+    if util.in_range(mime, constants_.mime_types.VIDEO_MIME_RANGE):
         return constants_.STATIC_VIDEO_PATH
+        
+    if util.in_range(mime, constants_.mime_types.AUDIO_MIME_RANGE):
+        return constants_.STATIC_AUDIO_PATH
 
-    if mime in  MT.AUDIO_MIMES:
-        return constants_.STATIC_VIDEO_PATH
+    # if mime in MT.IMAGE_MIMES:
+    #     return constants_.STATIC_IMAGE_PATH
+
+    # if mime in MT.VIDEO_MIMES:
+    #     return constants_.STATIC_VIDEO_PATH
+
+    # if mime in  MT.AUDIO_MIMES:
+    #     return constants_.STATIC_AUDIO_PATH
 
     return constants_.STATIC_TEMP_PATH
 
@@ -310,7 +328,7 @@ def generate_thumbnail(data):
 
     except Exception as e:
 
-        LOGGER.error("Error while generating thumbnail for {}. -> {}".format(src, e))
+        LOGGER.error("Error while generating thumbnail for {}.".format(src), e, exc_info=True)
 
 
 
@@ -347,7 +365,7 @@ def add_file_to_database(sha256 : bytes, file_size : int, mime : int, delete_on_
                     continue 
 
                 except Exception as e:
-                    LOGGER.error("Exception thrown adding tag to file -> {}".format(e.__repr__()))
+                    LOGGER.error("Exception thrown adding tag to file ", e, exc_info=True)
 
 
 
@@ -411,7 +429,7 @@ def process_video(data):
 
     except Exception as e:
 
-        LOGGER.error(e)
+        LOGGER.error(e, exc_info=True)
 
 
 def add_image_to_database(sha256_bytes : bytes, file_size : int , mime : int, filename : str, **kwargs):
@@ -498,7 +516,7 @@ async def process_file_upload(file : UploadFile):
             raise exceptions.API_400_BAD_FILE_EXCEPTION
         
 
-    file_ext = constants_.mime_ext_lookup.get(mime, None)
+    file_ext = constants_.MIME_EXT_LOOKUP.get(mime, None)
 
     # i probably just forgot to add the mime to the extension map if this is true 
     if not file_ext:

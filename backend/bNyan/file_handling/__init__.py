@@ -32,7 +32,7 @@ def get_mime(path : str) -> int:
         bit_to_check = f.read( 256 )
         
 
-    for ( offsets_and_headers, mime ) in C.headers_and_mime:
+    for ( offsets_and_headers, mime ) in C.HEADERS_AND_MIME:
         
         it_passes = False not in ( bit_to_check[ offset: ].startswith( header ) for ( offset, header ) in offsets_and_headers )
         
@@ -84,7 +84,7 @@ def get_mime(path : str) -> int:
 
 def get_mime_from_bytes(bit_to_check : bytes) -> int:
     
-    for ( offsets_and_headers, mime ) in C.headers_and_mime:
+    for ( offsets_and_headers, mime ) in C.HEADERS_AND_MIME:
         
         if any( bit_to_check[ offset: ].startswith( header ) for ( offset, header ) in offsets_and_headers ):
             

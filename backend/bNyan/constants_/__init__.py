@@ -97,7 +97,6 @@ PEPPER = "UEZ5V_HewsMowePwdLenthUWU__ooZqe"
 SALT_ROUNDS = 14
 SALT_PREFIX = b"2b" # needs to be 2b or 2a 
 
-# SECRET = "9ffd8b7c514f2009eaf299f3df6dcc76a788c9518941db4dd077656b92996bf3"
 SECRET = os.urandom(128).hex()
 
 ######## Other ########
@@ -120,15 +119,7 @@ RESTRICT_MAP_NO_SEP = {
 }
 
 
-# HLS Supported Packed Audio formats are:
-# 
-# AAC with ADTS framing [ISO_13818_7]
-# MP3                   [ISO_13818_3]
-# AC-3                  [AC_3]
-# Enhanced AC-3         [AC_3]
-
-
-mime_ext_lookup = {
+MIME_EXT_LOOKUP = {
     APPLICATION_UNKNOWN : "unknown",
 
     APPLICATION_PDF : ".pdf",
@@ -161,36 +152,7 @@ mime_ext_lookup = {
     VIDEO_WEBM : '.webm',
 }
 
-# mime_header_lookup = {
-#     IMAGE_JPEG : JPEG_HEADER,
-#     IMAGE_PNG  : PNG_HEADER,
-#     IMAGE_GIF  : GIF_HEADER,
-#     IMAGE_BMP  : BMP_HEADER,
-#     IMAGE_WEBP : WEBP_HEADER,
-#     IMAGE_TIFF : TIFF_HEADER,
-
-#     # AUDIO_M4A : '.m4a',
-#     # AUDIO_MP3 : '.mp3',
-#     # AUDIO_MKV : '.mkv',
-#     # AUDIO_MP4 : '.mp4',
-#     # AUDIO_OGG : '.ogg',
-#     # AUDIO_FLAC : '.flac',
-#     # AUDIO_WAVE : '.wav',
-#     # AUDIO_WMA : '.wma',
-
-#     # VIDEO_AVI : '.avi',
-#     # VIDEO_FLV : '.flv',
-#     # VIDEO_MOV : '.mov',
-#     # VIDEO_MP4 : '.mp4',
-#     # VIDEO_MPEG : '.mpeg',
-#     # VIDEO_WMV : '.wmv',
-#     # VIDEO_MKV : '.mkv',
-#     # VIDEO_OGV : '.ogv',
-#     # VIDEO_WEBM : '.webm',
-# }
-
-
-headers_and_mime = [
+HEADERS_AND_MIME = [
     ( IMAGE_JPEG_HEADERS, IMAGE_JPEG       ),
     ( IMAGE_PNG_HEADER  , IMAGE_PNG        ),
     ( IMAGE_GIF_HEADERS , IMAGE_GIF        ),

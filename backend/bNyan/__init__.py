@@ -113,7 +113,7 @@ async def search_files(request : Request,
         # 'http://' + '0.0.0.0:700' + '/' + 'static/i' + 'filename' + '.ext'
 
         leading = "http://{}/".format(config.get((), "server_address"))
-        ending  = file.hash + constants_.mime_ext_lookup.get(file.mime, "") 
+        ending  = file.hash + constants_.MIME_EXT_LOOKUP.get(file.mime, "") 
 
         urls    = {
             "content" : [ leading + methods.get_static_route_from_mime(file.mime) + "/" + ending ],
@@ -269,6 +269,21 @@ async def favicon():
         return FileResponse(constants_.STATIC_FAVICON_PATH)
 
     raise exceptions.API_404_NOT_FOUND_EXCEPTION
+
+
+
+@app.get('/heartbeat')
+@app.get('/')
+async def heartbeat():
+    
+    return {
+        "nyaa~" : "OwO",
+        "-w-"   : "^w^",
+        ";3c"   : "OwU"
+    }
+
+
+
 
 def main():
     import uvicorn
