@@ -5,7 +5,7 @@ import subprocess
 import os 
 FFMPEG = "..\\..\\backend\\bnyan\\bin\\ffmpeg.exe"
 FFPROBE = "..\\..\\backend\\bnyan\\bin\\ffprobe.exe"
-SHAKA_PAKCER = "..\\..\\backend\\bnyan\\bin\\shaka_packager.exe"
+SHAKA_PAKCER = "..\\..\\backend\\bnyan\\bin\\packager.exe"
 
 def subprocess_communicate( process: subprocess.Popen, timeout : int = 10) -> tuple:
     """ returns process.communicate with the given timeout """
@@ -113,11 +113,13 @@ def prep_video(video_path, output):
         '-i', str(video_path),
 
         '-c:a','aac', '-ac', '2',
-        '-c:v', 'libx264',
-        '-x264opts', 'keyint=24:min-keyint=24:no-scenecut',
+        # '-c:v', 'libx264',
+        '-c:v', 'libvpx-vp9',
+        '-keyint_min', '150', '-g', '150',
+        # '-x264opts', 'keyint=24:min-keyint=24:no-scenecut',
         output 
     ]
-
+    print(" ".join(ff_args))
     process = subprocess.Popen( ff_args, bufsize = 10**5, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
     
     ( stdout, stderr ) = subprocess_communicate( process )
@@ -141,7 +143,8 @@ def dash(video_path):
         'input={},stream=video,output=video.mp4'.format(video_path),
         '--profile', 'on-demand',
         '--min_buffer_time', '3',
-        '--segment_duration', '3'
+        '--segment_duration', '3',
+        '--dash_force_segment_list',
         '--mpd_output', 'sample-manifest.mpd',
     ]
 
@@ -162,4 +165,9 @@ outp = ".\\test.mp4"
 
 
 path = ".\\video-test\\video1.mkv" 
-extract_subs(path, 'video-test')
+
+
+# extract_subs(path, 'video-test')
+prep_video(".\\test.webm", 'proc.mp4')
+dash('proc.mp4')
+

@@ -12,7 +12,7 @@ UP_DIRECTORY_LEVEL = compile(r"[/\\]?\.\.[/\\]")
 REMOVE_INVALID_SIGNUP_NAME = compile(r"[^\-a-zA-Z]")
 
 # used to match the range header in requests, only grabs the starting bytes value
-RANGE_HEADER = compile(r"bytes=([0-9]+)\-")
+RANGE_HEADER = compile(r"bytes=(?P<min>[0-9]+)\-(?P<max>[0-9]+)?")
 
 DIGIT = compile(r"([0-9]+)")
 

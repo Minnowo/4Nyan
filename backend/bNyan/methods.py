@@ -71,6 +71,8 @@ def get_clean_name(path : str, rout : str):
 
     path = os.path.join(rout, path[0:2], path)
 
+    print(path)
+
     if not os.path.isfile(path):
 
         raise exceptions.API_404_NOT_FOUND_EXCEPTION
@@ -215,12 +217,16 @@ def _stream_video(video_name : str, request : Request):
     if not _range: # doesn't match regex, bad header request 
         raise exceptions.API_400_BAD_REQUEST_EXCEPTION
 
-    start_byte_requested = int(_range.group(1))
-    end_byte_planned     = min(start_byte_requested + constants_.VIDEO_STREAM_CHUNK_SIZE, total_response_size)
+    _min = int(_range.group('min'))
+    _max = int(_range.group('max') or _min + constants_.VIDEO_STREAM_CHUNK_SIZE)
+
+    # end_byte_planned     = min(start_byte_requested + constants_.VIDEO_STREAM_CHUNK_SIZE, total_response_size)
+    end_byte_planned     = min(_max, total_response_size)
 
     headers={
             "Accept-Ranges" : "bytes",
-            "Content-Range" : f"bytes {start_byte_requested}-{end_byte_planned}/{total_response_size}",
+            # "Content-Range" : f"bytes {start_byte_requested}-{end_byte_planned}/{total_response_size}",
+            "Content-Range" : f"bytes {_min}-{_max}/{total_response_size}",
             "Content-Type"  : "video/mp4"
         }
 
@@ -229,9 +235,11 @@ def _stream_video(video_name : str, request : Request):
 
     with open(video_name, "rb") as reader:
 
-        reader.seek(start_byte_requested)
+        # reader.seek(start_byte_requested)
+        reader.seek(_min)
 
-        data = reader.read(end_byte_planned)
+        # data = reader.read(end_byte_planned)
+        data = reader.read(_max - _min)
         
         return Response(data, status_code=constants_.status_codes.PARTIAL_RESPONSE, headers=headers)
 
@@ -273,6 +281,7 @@ def _get_video(video_name : tuple, request : Request):
 
 def _get_m3u8(m3u8_path : tuple, request : Request):
 
+
     name_check(m3u8_path)
 
     (dire, file) = m3u8_path
@@ -287,7 +296,7 @@ def _get_m3u8(m3u8_path : tuple, request : Request):
         return headers
 
     m3u8_path = get_clean_name(os.path.join(dire, file), constants_.STATIC_M3U8_PATH)
-
+    
     return FileResponse(m3u8_path, status_code=constants_.status_codes.RESPONSE, headers=headers)
 
 

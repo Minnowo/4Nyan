@@ -16,7 +16,7 @@ export default function WatchPage(props)
         //  http://192.168.1.149:721/static/m3u8/RnM_S4E1.m3u8
         //  http://192.168.1.149:721/static/m3u8/fallen_kingdom.m3u8
         // D:\Programming\.PROJECTS\4Nyan\backend\bNyan\static\v\79\79020e3030c48a1de929dcd8824b281dbd541649c1e8872ce4838d3e6f1a5189.mp4
-        m3u8 : "http://192.168.1.149:721/static/m3u8/43a39c984e08c44e96bf14846a36d4a012cdca77cba0a6b55da0e692a54abe94?ts=index.m3u8",
+        m3u8 : "http://192.168.1.148:721/static/m3u8/00?ts=man.mpd",
         autoPlay : false
     };
 

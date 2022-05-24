@@ -106,6 +106,9 @@ async def search_files(request : Request,
     files = [ ]
     for file in database.Methods.search_files(search):
 
+        if methods.get_static_route_from_mime(file.mime) == 'None':
+            continue
+
         # convert the hash to hex so it's json safe 
         file.hash = file.hash.hex()
 
@@ -283,7 +286,14 @@ async def heartbeat():
     }
 
 
+@app.get("/dash")
+async def dash():
 
+    man = "http://localhost:721/static/v/00man.mpd"
+    vid = "http://localhost:721/static/v/00video.mp4"
+    aud = "http://localhost:721/static/v/00audio.mp4"
+
+    return FileResponse(man)
 
 def main():
     import uvicorn

@@ -39,4 +39,5 @@ The database is [SQLite](https://sqlite.org/index.html), this is being used with
 
 
 
-
+https://github.com/Dash-Industry-Forum/dash.js/issues/2259
+https://github.com/aminyazdanpanah/python-ffmpeg-video-streaming#dash
