@@ -71,8 +71,6 @@ def get_clean_name(path : str, rout : str):
 
     path = os.path.join(rout, path[0:2], path)
 
-    print(path)
-
     if not os.path.isfile(path):
 
         raise exceptions.API_404_NOT_FOUND_EXCEPTION
@@ -202,14 +200,9 @@ def _get_thumbnail(image_name : str, request : Request):
 
 
 def _stream_video(video_name : str, request : Request):
-    """ returns a partial response with bytes from the request video file """
-
-    if request is None:
-        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+    """ returns a partial response with bytes from the given range header """
 
     video_name = get_clean_name_or_die(video_name, constants_.STATIC_VIDEO_PATH)
-
-    total_response_size = os.stat(video_name).st_size
 
     # get start byte range from header, default to 0 
     _range = reg.RANGE_HEADER.search(request.headers.get("range", "bytes=0-"))
@@ -217,16 +210,20 @@ def _stream_video(video_name : str, request : Request):
     if not _range: # doesn't match regex, bad header request 
         raise exceptions.API_400_BAD_REQUEST_EXCEPTION
 
-    _min = int(_range.group('min'))
-    _max = int(_range.group('max') or _min + constants_.VIDEO_STREAM_CHUNK_SIZE)
+    file_size = os.stat(video_name).st_size
 
-    # end_byte_planned     = min(start_byte_requested + constants_.VIDEO_STREAM_CHUNK_SIZE, total_response_size)
-    end_byte_planned     = min(_max, total_response_size)
+    seek_to = int(_range.group('min'))
+    read_to = min(int(_range.group('max') or seek_to + constants_.VIDEO_STREAM_CHUNK_SIZE), file_size)
 
+    bytes_to_read = read_to - seek_to
+
+    if bytes_to_read < 0:
+        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+
+    
     headers={
             "Accept-Ranges" : "bytes",
-            # "Content-Range" : f"bytes {start_byte_requested}-{end_byte_planned}/{total_response_size}",
-            "Content-Range" : f"bytes {_min}-{_max}/{total_response_size}",
+            "Content-Range" : f"bytes {seek_to}-{read_to}/{file_size}",
             "Content-Type"  : "video/mp4"
         }
 
@@ -235,11 +232,9 @@ def _stream_video(video_name : str, request : Request):
 
     with open(video_name, "rb") as reader:
 
-        # reader.seek(start_byte_requested)
-        reader.seek(_min)
+        reader.seek(seek_to)
 
-        # data = reader.read(end_byte_planned)
-        data = reader.read(_max - _min)
+        data = reader.read(bytes_to_read)
         
         return Response(data, status_code=constants_.status_codes.PARTIAL_RESPONSE, headers=headers)
 
@@ -298,6 +293,27 @@ def _get_m3u8(m3u8_path : tuple, request : Request):
     m3u8_path = get_clean_name(os.path.join(dire, file), constants_.STATIC_M3U8_PATH)
     
     return FileResponse(m3u8_path, status_code=constants_.status_codes.RESPONSE, headers=headers)
+
+
+
+def _get_subs(sub_path : tuple, request : Request):
+
+    name_check(sub_path)
+
+    (dire, file) = sub_path
+
+    headers={
+            "Accept-Ranges" : "bytes",
+            "Content-Type"  : "text/vtt",
+            "Content-Disposition": 'attachment; filename="{}"'.format(file),
+        }
+
+    if request.method == "HEAD":
+        return headers
+
+    sub_path = get_clean_name(os.path.join(dire, file), constants_.STATIC_SUBTITLE_PATH)
+    
+    return FileResponse(sub_path, status_code=constants_.status_codes.RESPONSE, headers=headers)
 
 
 
@@ -392,26 +408,49 @@ def add_file_to_database(sha256 : bytes, file_size : int, mime : int, delete_on_
 def process_video(data):
     """ passed into a worker queue to split and encode a video into ts files, and then creates the m3u8 file """
 
-    source_video = data['file_path']
-    output_dir   = data['output']
-    ts_url       = data['ts_url']
-    m3u8_url     = data['m3u8_url']
-    sha256_hex   = data['sha256_hex']
+    try:
+
+        address = config.get((), "server_address")
+
+        sha256_hex   = data['sha256_hex']
+        source_video = data['file_path']
+
+        ts_folder   = os.path.join( constants_.STATIC_VIDEO_PATH   , sha256_hex[0:2], sha256_hex )
+        subs_folder = os.path.join( constants_.STATIC_SUBTITLE_PATH, sha256_hex[0:2], sha256_hex )
+
+        ts_url    = "http://{}/{}/{}?ts={}".format(address, constants_.STATIC_VIDEO_ROUTE, sha256_hex, '{}')
+        m3u8_url  = "http://{}/{}/{}?ts={}".format(address, constants_.STATIC_M3U8_ROUTE , sha256_hex, '{}')
+    
+    except KeyError as e:
+    
+        LOGGER.error("KeyError while fetching from data dict in process_video {}".format(e), stack_info=True)
+        return
+
 
     try:
 
-        m3u8 = file_handling.video_handling.split_video(source_video, output_dir, 6, ts_url, ts_url, m3u8_url)
+        m3u8 = file_handling.video_handling.split_video(source_video, ts_folder, 6, ts_url, ts_url, m3u8_url)
 
     except exceptions.FFMPEG_Exception as e:
 
-        LOGGER.error(e)
+        LOGGER.error(e, stack_info=True)
         
         util.remove_file(source_video)
 
         return 
 
-    hash = os.path.basename(output_dir)
-    m3u8_directory = os.path.join(constants_.STATIC_M3U8_PATH, hash[0:2], hash)
+
+    try:
+
+        subs = file_handling.video_handling.extract_subs(source_video, subs_folder)
+
+    except (exceptions.FFMPEG_Exception, exceptions.FFPROBE_Exception) as e:
+
+        subs = None 
+
+        LOGGER.warning("Exception extracting subtitles from video {}".format(e), stack_info=True)
+
+    m3u8_directory = os.path.join(constants_.STATIC_M3U8_PATH, sha256_hex[0:2], sha256_hex)
     
     util.create_directory(m3u8_directory)
 
@@ -588,10 +627,10 @@ async def process_file_upload(file : UploadFile):
 
     data = {
         "file_path"    : filename,
-        "output"       : ts_folder,
-        "m3u8_output"  : os.path.join(constants_.STATIC_M3U8_PATH, sha256_hex[0:2], sha256_hex),
-        "ts_url"       : "http://{0}/static/v/{1}?ts={2}".format(config.get((), "server_address"), sha256_hex, '{}'),
-        "m3u8_url"     : "http://{0}/static/m3u8/{1}?ts={2}".format(config.get((), "server_address"), sha256_hex, '{}'),
+        # "output"       : ts_folder,
+        # "m3u8_output"  : os.path.join(constants_.STATIC_M3U8_PATH, sha256_hex[0:2], sha256_hex),
+        # "ts_url"       : "http://{0}/static/v/{1}?ts={2}".format(config.get((), "server_address"), sha256_hex, '{}'),
+        # "m3u8_url"     : "http://{0}/static/m3u8/{1}?ts={2}".format(config.get((), "server_address"), sha256_hex, '{}'),
         "sha256_hex"   : sha256_hex,
         "sha256_bytes" : sha256_bytes,
         "file_size"    : file_size,
@@ -605,6 +644,9 @@ async def process_file_upload(file : UploadFile):
 
 def get_thumbnail(path, request):
     
+    if request is None:
+        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+
     if isinstance(path, tuple):
 
         raise exceptions.API_404_NOT_FOUND_EXCEPTION
@@ -613,6 +655,9 @@ def get_thumbnail(path, request):
 
 
 def get_image(path, request):
+
+    if request is None:
+        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
 
     if isinstance(path, tuple):
 
@@ -623,6 +668,9 @@ def get_image(path, request):
 
 def get_video(path, request):
 
+    if request is None:
+        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+
     if isinstance(path, tuple):
 
         return _get_video(path, request)
@@ -632,17 +680,33 @@ def get_video(path, request):
 
 def get_m3u8(path, request):
     
+    if request is None:
+        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+
     if isinstance(path, tuple):
 
         return _get_m3u8(path, request) 
 
     raise exceptions.API_404_NOT_FOUND_EXCEPTION
+
+
+def get_subs(path, request):
     
+    if request is None:
+        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+
+    if isinstance(path, tuple):
+
+        return _get_subs(path, request) 
+
+    raise exceptions.API_404_NOT_FOUND_EXCEPTION
+        
 
 CATEGORY_MAP = {
-    "t"    : get_thumbnail,
-    "i"    : get_image,
-    "v"    : get_video, 
-    "m3u8" : get_m3u8
+    "t" : get_thumbnail,
+    "i" : get_image,
+    "v" : get_video, 
+    "m" : get_m3u8,
+    "s" : get_subs,
 }
 

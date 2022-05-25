@@ -140,6 +140,24 @@ async def search_files(request : Request,
 
                 urls["subs"].append(leading + constants_.STATIC_M3U8_ROUTE + "/" + file.hash + "?ts=index_vtt.m3u8")
 
+
+            # this is temporary until i figure out how i want to do subtitles
+            # i'm thinking i will add each subtitle to the database as it's own file
+            # and make a group to link them to their video and use tags for name / title and other info
+            # rn this is just a lazy solution to see if this works 
+            ###############################################################################################################
+            subs_dir = os.path.join(constants_.STATIC_SUBTITLE_PATH, file.hash[0:2], file.hash)
+
+            if os.path.isdir(subs_dir):
+
+                for i in os.listdir(subs_dir):
+
+                    if not reg.SUBTITLE_FILE.match(i):
+                        continue
+
+                    urls["subs"].append(leading + constants_.STATIC_SUBTITLE_ROUTE + "/" + file.hash + "?ts={}".format(i))
+            ###############################################################################################################
+
         file.static_url = urls
 
         files.append(file)
@@ -191,15 +209,11 @@ async def create_item(request : Request, data: UploadFile = File(...) ): #, user
 
     config.set((), "content_tag", os.urandom(32).hex())
     
-    return True 
-
 
 @app.post("/create/map")
 async def create_map(request : Request, ftmap : Union[models.Tag_File, List[models.Tag_File]]):
     
     database.Methods.add_tag_to_file(ftmap)
-
-
 
 
 @app.post('/create/user')

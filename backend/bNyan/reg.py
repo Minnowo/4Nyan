@@ -1,4 +1,4 @@
-from re import compile
+from re import compile, IGNORECASE
 from . import constants_
 
 # matches any invalid path characters for the given system 
@@ -12,7 +12,7 @@ UP_DIRECTORY_LEVEL = compile(r"[/\\]?\.\.[/\\]")
 REMOVE_INVALID_SIGNUP_NAME = compile(r"[^\-a-zA-Z]")
 
 # used to match the range header in requests, only grabs the starting bytes value
-RANGE_HEADER = compile(r"bytes=(?P<min>[0-9]+)\-(?P<max>[0-9]+)?")
+RANGE_HEADER = compile(r"bytes=(?P<min>[0-9]+)\-(?P<max>[0-9]+)?", flags=IGNORECASE)
 
 DIGIT = compile(r"([0-9]+)")
 
@@ -28,3 +28,5 @@ IS_RAW_HEXADECIMAL = compile(r"^([a-fA-F0-9]+)$")
 IS_TS_FILENAME = compile(r"^\d+\.ts")
 
 TAG = compile(r"^(?:(?P<namespace>.+):)?(?P<tag>.+)$")
+
+SUBTITLE_FILE = compile(r"^sub-\d+\.((vtt)|(ass)|(srt))$", flags=IGNORECASE)

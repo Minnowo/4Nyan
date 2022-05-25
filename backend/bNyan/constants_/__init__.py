@@ -22,20 +22,23 @@ MAX_IMG_PATH_LENGTH = 100
 MIN_IMG_PATH_LENGTH = 3
 
 
-STATIC_FAVICON_PATH = os.path.join("static", "favicon.ico")
-STATIC_IMAGE_PATH = os.path.join("static", "i")
+STATIC_FAVICON_PATH   = os.path.join("static", "favicon.ico")
+STATIC_IMAGE_PATH     = os.path.join("static", "i")
 STATIC_THUMBNAIL_PATH = os.path.join("static", "t")
-STATIC_VIDEO_PATH = os.path.join("static", "v")
-STATIC_M3U8_PATH  = os.path.join("static", "m3u8")
-STATIC_TEMP_PATH  = os.path.join("static", "tmp")
-STATIC_AUDIO_PATH = os.path.join("static", "a")
-STATIC_LOG_PATH   = os.path.join("static", "logs")
+STATIC_VIDEO_PATH     = os.path.join("static", "v")
+STATIC_M3U8_PATH      = os.path.join("static", "m")
+STATIC_SUBTITLE_PATH  = os.path.join("static", "s")
+STATIC_AUDIO_PATH     = os.path.join("static", "a")
+STATIC_TEMP_PATH      = os.path.join("static", "tmp")
+STATIC_LOG_PATH       = os.path.join("static", "logs")
 
-STATIC_IMAGE_ROUTE = STATIC_IMAGE_PATH.replace("\\", "/")
-STATIC_THUMBNAIL_ROUTE = STATIC_THUMBNAIL_PATH.replace("\\", "/")
-STATIC_VIDEO_ROUTE = STATIC_VIDEO_PATH.replace("\\", "/")
-STATIC_M3U8_ROUTE  = STATIC_M3U8_PATH.replace("\\", "/")
-STATIC_AUDIO_ROUTE = STATIC_AUDIO_PATH.replace("\\", "/")
+# these are used for urls, so ensure using normal / if on windows 
+STATIC_IMAGE_ROUTE     = STATIC_IMAGE_PATH    .replace(os.sep, "/")
+STATIC_THUMBNAIL_ROUTE = STATIC_THUMBNAIL_PATH.replace(os.sep, "/")
+STATIC_VIDEO_ROUTE     = STATIC_VIDEO_PATH    .replace(os.sep, "/")
+STATIC_M3U8_ROUTE      = STATIC_M3U8_PATH     .replace(os.sep, "/")
+STATIC_AUDIO_ROUTE     = STATIC_AUDIO_PATH    .replace(os.sep, "/")
+STATIC_SUBTITLE_ROUTE  = STATIC_SUBTITLE_PATH .replace(os.sep, "/")
 
 
 

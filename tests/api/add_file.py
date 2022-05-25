@@ -80,6 +80,20 @@ def create_map(file_id, tag_id):
 # create_tag('category:video')
 # create_map(0,6)
 # create_map(13, 9)
-create_tag("category:pictures")
-for i in range(10):
-    create_map(i, 10)
+# create_tag("category:pictures")
+
+
+# create_map(1, 13)
+# create_map(3, 13)
+# create_map(4, 13)
+# create_map(10, 13)
+# create_map(11, 13)
+# create_map(14, 13)
+
+from re import compile
+
+a = compile(r"^sub-\d+\.((vtt)|(ass)|(srt))$")
+
+print(a.match("sub-3.g"))
+
+

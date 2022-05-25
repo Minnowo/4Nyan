@@ -169,7 +169,79 @@ def check_ffmpeg_error( lines ):
         
         raise exceptions.Damaged_Or_Unusual_File_Exception( 'FFMPEG could not parse.' )
         
+   
+def parse_ffmpeg_duration( lines ):
+    
+    # get duration (in seconds)
+    #   Duration: 00:00:02.46, start: 0.033000, bitrate: 1069 kb/s
+    try:
+        
+        # had a vid with 'Duration:' in title, ha ha, so now a regex
+        line = [ l for l in lines if search( r'^\s*Duration:', l ) is not None ][0]
+        
+        if 'Duration: N/A' in line:
+            
+            return ( None, None )
+            
+        
+        if 'start:' in line:
+            
+            m = search( r'(start: )-?[0-9]+\.[0-9]*', line )
+            
+            start_offset = float( line[ m.start() + 7 : m.end() ] )
+            
+        else:
+            
+            start_offset = 0
+            
+        
+        match = search("[0-9]+:[0-9][0-9]:[0-9][0-9].[0-9][0-9]", line)
+        hms = [ float( float_string ) for float_string in line[match.start():match.end()].split(':') ]
+        
+        duration = 0
+        
+        l = len( hms )
 
+        if l == 1:
+            
+            duration = hms[0]
+            
+        elif l == 2:
+            
+            duration = 60 * hms[0] + hms[1]
+            
+        elif l == 3:
+            
+            duration = 3600 * hms[0] + 60 * hms[1] + hms[2]
+            
+        
+        if duration == 0:
+            
+            return ( None, None )
+            
+        
+        if start_offset > 0.85 * duration:
+            
+            # as an example, Duration: 127:57:31.25, start: 460633.291000 lmao
+            
+            return ( None, None )
+            
+        
+        # we'll keep this for now I think
+        if start_offset > 1:
+            
+            start_offset = 0
+            
+        
+        file_duration = duration + start_offset
+        stream_duration = duration
+        
+        return ( file_duration, stream_duration )
+        
+    except:
+        
+        raise exceptions.Damaged_Or_Unusual_File_Exception( 'Error reading duration!' )
+        
 
 
 def parse_ffmpeg_metadata_container( lines ) -> str:
@@ -419,6 +491,8 @@ def get_video_information_from_ffmpeg_lines( lines ):
 
     width, height = parse_ffmpeg_video_dimensions( lines )
 
+    file_duration, stream_duration = parse_ffmpeg_duration( lines )
+
     vinfo = {
         "mime" : get_video_mime_from_ffmpeg_lines( lines ),
 
@@ -429,44 +503,13 @@ def get_video_information_from_ffmpeg_lines( lines ):
         "audio_format" : audio_format,
 
         "width" : width ,
-        "height" : height 
+        "height" : height ,
+
+        "duration" : file_duration or 0,
+        "stream_duration" : stream_duration or 0 
     }
 
     return vinfo
-
-
-
-
-# def split_video(video_path : str, output_directory : str, segment_size : int = 6) -> str:
-#     """ process the given video creating an m3u8 files ready for hls, returns the m3u8 path"""
-
-#     ff_args = [C.FFMPEG_PATH, '-y', '-v', 'error',
-#                 '-i', video_path, 
-#                 '-c:v', 'libx264',
-#                 '-c:a','aac', '-ac', '2',
-#                 '-preset','veryfast',
-#                 '-f', 'hls', '-hls_time', str(segment_size),
-#                 '-hls_playlist_type','event', # unsure what i want this to be https://www.rfc-editor.org/rfc/rfc8216#section-4.3.1.1
-#                                               # ctrl + f EXT-X-PLAYLIST-TYPE
-#                 '-hls_list_size', '0',
-#                 os.path.join(output_directory, '0')]
-
-
-#     process = subprocess.Popen( ff_args, bufsize = 10**5, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
-    
-#     ( stdout, stderr ) = util.subprocess_communicate( process )
-    
-#     data_bytes = stderr
-    
-#     if len( data_bytes ) != 0:
-        
-#         raise exceptions.FFMPEG_Exception( non_failing_unicode_decode( data_bytes, 'utf-8' ) )
-        
-    
-#     del process
-    
-#     return os.path.join(output_directory, '0')
-
 
 
 def split_video(video_path : str, output_directory : str, segment_size : int, ts_url : str, vtt_url : str, m3u8_url : str) -> str:
@@ -786,7 +829,9 @@ def extract_subs(video_path, output_folder):
             continue 
 
         name  = name.decode('utf-8', errors="replace")
-        oname = os.path.join(output_folder, 'sub-{}.vtt'.format(sub_count))
+
+        # changed .vtt to .srt because kodi won't play subs unless they're srt 
+        oname = os.path.join(output_folder, 'sub-{}.srt'.format(sub_count))
 
         # extend ffmpeg arguments 
         ff_args.extend(['-map', '0:{}'.format(index), oname ])
