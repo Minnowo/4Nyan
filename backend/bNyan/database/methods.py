@@ -449,6 +449,10 @@ def search_files(search : models.FileSearch):
 
             result = result.join(TBL_Tag_Map).filter(TBL_Tag_Map.tag_id.in_(search.tag_ids))
 
+        if search.subtag_ids:
+            
+            result = result.join(TBL_Tag_Map, TBL_Tags).filter(TBL_Tags.subtag_id.in_(search.subtag_ids))
+
         if search.sort_asc:
 
             # % prevents index err

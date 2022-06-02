@@ -89,11 +89,13 @@ def create_map(file_id, tag_id):
 # create_map(10, 13)
 # create_map(11, 13)
 # create_map(14, 13)
+for i in range(10):
 
-from re import compile
+    create_map(i, 13)
+# from re import compile
 
-a = compile(r"^sub-\d+\.((vtt)|(ass)|(srt))$")
+# a = compile(r"^sub-\d+\.((vtt)|(ass)|(srt))$")
 
-print(a.match("sub-3.g"))
+# print(a.match("sub-3.g"))
 
 

@@ -1,7 +1,6 @@
 
 
 import os
-from urllib.error import HTTPError 
 from fastapi import FastAPI, HTTPException, Request, Depends, File, UploadFile, Query, Body
 from fastapi.security import OAuth2PasswordRequestForm 
 from fastapi.middleware.gzip import GZipMiddleware
@@ -12,7 +11,6 @@ from typing import List
 from typing import Optional, Union
 
 from . import file_handling
-
 from . import exceptions
 from . import methods 
 from . import reg
@@ -25,7 +23,6 @@ from . import bn_logging
 from . import config
 from . import threading_
 
-import hashlib
 
 LOGGER = bn_logging.get_logger(constants_.BNYAN_MAIN[0], constants_.BNYAN_MAIN[1])
 
@@ -51,13 +48,14 @@ app.add_middleware(
 )
 
 
-
 @app.get("/search/get_file_tags")
 async def search_tags(request : Request, fid : List[int] = Query(None), fh : List[str] = Query(None)):
 
     tag = {}
 
     if fh:
+
+        raise exceptions.API_500_NOT_IMPLEMENTED
 
         fh = [bytes.fromhex(h) for h in fh if reg.IS_RAW_HEXADECIMAL.match(h)]
 
@@ -95,13 +93,14 @@ async def search_files(request : Request,
 
             return {}
 
-    search = models.FileSearch()
-    search.sort_type = sort_t
-    search.sort_asc = sort_a
-    search.hash_ids = fid
-    search.tag_ids = tid 
-    search.namespace_ids = nid 
-    search.subtag_ids = sid 
+    search = models.FileSearch(
+        sort_type     = sort_t,
+        sort_asc      = sort_a,
+        hash_ids      = fid,
+        tag_ids       = tid,
+        namespace_ids = nid,
+        subtag_ids    = sid,
+    )
     
     files = [ ]
     for file in database.Methods.search_files(search):

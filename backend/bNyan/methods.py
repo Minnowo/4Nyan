@@ -70,7 +70,7 @@ def name_check(path : Union[str, tuple], checks = [reg.INVALID_PATH_CHAR]):
 def get_clean_name(path : str, rout : str):
 
     path = os.path.join(rout, path[0:2], path)
-
+    
     if not os.path.isfile(path):
 
         raise exceptions.API_404_NOT_FOUND_EXCEPTION

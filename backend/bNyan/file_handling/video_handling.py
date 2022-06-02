@@ -537,7 +537,7 @@ def split_video(video_path : str, output_directory : str, segment_size : int, ts
 
                 # '-preset','superfast',   # this seems to break the segment size
                 # '-threads', '1',         # reduce cpu but greatly increase time 
-                '-crf', '34',              # unsure what I want for this, likely will be based on file size 
+                '-crf', '28',              # unsure what I want for this, likely will be based on file size 
 
                 '-f', 'hls', 
                 '-hls_time', str(segment_size),
