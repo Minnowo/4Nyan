@@ -3,7 +3,7 @@ import React from 'react'
 import "../../css/bootstrap.min.css"
 import "../../css/global.css"
 
-export default function FileUpload(props)
+export default function ImageContainer(props)
 {
     const { image, caption, style  } = props;
 

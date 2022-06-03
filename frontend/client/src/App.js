@@ -10,6 +10,8 @@ import LoginPage from './components/pages/LoginPage';
 import RegisterPage from './components/pages/SignupPage';
 import UploadPage from './components/pages/UploadPage';
 import CreateTag from './components/tests/CreateTag';
+import ImagesPage from './components/pages/ImagesPage';
+import ImagePage from './components/pages/ImagePage';
 
 
 export default function App()
@@ -24,6 +26,8 @@ export default function App()
         <Route path={ROUTES.default} element={<Default {...state} />}></Route>
         <Route path={ROUTES.home} element={<Default {...state}/>}></Route>
         <Route path={ROUTES.watch} element={<WatchPage {...state}/>}></Route>
+        <Route path={ROUTES.images} element={<ImagesPage {...state}/>}></Route>
+        <Route path={ROUTES.image + "/:id"} element={<ImagePage {...state}/>}></Route>
         <Route path={ROUTES.login} element={<LoginPage {...state}/>}></Route>
         <Route path={ROUTES.register} element={<RegisterPage {...state}/>}></Route>
         <Route path={ROUTES.upload} element={<UploadPage {...state}/>}></Route>

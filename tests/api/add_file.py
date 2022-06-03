@@ -91,11 +91,32 @@ def create_map(file_id, tag_id):
 # create_map(14, 13)
 for i in range(10):
 
-    create_map(i, 13)
+    create_map(5, i)
 # from re import compile
 
 # a = compile(r"^sub-\d+\.((vtt)|(ass)|(srt))$")
 
 # print(a.match("sub-3.g"))
 
-
+a = [
+    '1girl',
+'animal ears',
+'brown eyes',
+'brown hair',
+'character:inugami korone',
+'closed mouth',
+'dog ears',
+'dog girl',
+'dog tail',
+'eyebrows visible through hair',
+'highres',
+'kohe billialot',
+'lips',
+'looking at viewer',
+'phone wallpaper',
+'series:hololive',
+'solo',
+'tail',
+]
+for i in a:
+    create_tag(i)

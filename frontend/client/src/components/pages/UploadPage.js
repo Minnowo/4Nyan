@@ -1,6 +1,6 @@
 import React from 'react'
 import Navbar from "../elements/Navbar";
-import FileUpload from '../elements/FileUpload';
+import ImageContainer from '../elements/ImageContainer';
 
 import postData from '../../requests';
 
@@ -122,11 +122,17 @@ export default function UploadPage(props)
         // generage file list for new files 
         let newFiles   = [];
         let newPreview = [];
+        let x = 0;
 
         for (let f of _files) 
         {
             newFiles.push(f);
-            newPreview.push(URL.createObjectURL(f));
+
+            if (x < 5)
+            {
+                newPreview.push(URL.createObjectURL(f));
+                ++x;
+            }
         }
 
         setFiles(newFiles);
@@ -137,15 +143,15 @@ export default function UploadPage(props)
     function renderPreview()
     {
         let r = []
-        for(let i = 0; i < files.length; i++)
+        for(let i = 0; i < Math.min(files.length, 5); i++)
         {
             let props = {
-                image : filePreviews[i],
-                caption : files[i].name,
+                image    : filePreviews[i],
+                caption  : files[i].name,
                 fileType : files[i].type
                 // onClick : (e) => removePreviewClick(e, i),
             }
-            r.push(<FileUpload {...props} key={i}></FileUpload>);
+            r.push(<ImageContainer {...props} key={i}></ImageContainer>);
         }
         return r;
     }

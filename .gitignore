@@ -10,6 +10,7 @@
 *.vtt
 *.m3u8
 *.mpd
+*.webm
 
 # JetBrains PyCharm and WebStorm stuff
 frontend/.idea

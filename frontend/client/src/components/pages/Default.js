@@ -4,7 +4,7 @@ import Nav from "../elements/Navbar";
 
 import { getData } from '../../requests';
 import objectEmpty from '../../util';
-import FileUpload from '../elements/FileUpload';
+import ImageContainer from '../elements/ImageContainer';
 import API_ENDPOINTS from '../../constant';
 
 import "../../css/video.css";
@@ -44,69 +44,6 @@ export default function Default(props)
             content_tag : content_tag
         }
 
-
-        try 
-        {
-            const req = await getData(get_endpoint, headers);
-
-            if(req.status !== 200)
-                return;
-                        
-                let content = JSON.parse(req.response);
-                
-                if(objectEmpty(content))
-                {
-                    content = JSON.parse(window.localStorage.getItem("content"));
-                    console.log("cache hit");
-                }
-                else 
-                {
-                    //Store into localStorage
-                    window.localStorage.setItem("content", req.response);
-                    window.localStorage.setItem("content_tag", content.content_tag);
-                    console.log("cache miss");
-                }
-
-                let display = [];
-                const max = Math.min(content.content.length, page * 25);
-
-                for(let i = Math.max(max - 25, 0); i < max; i++)
-                {
-                    const value       = content.content[i];
-                    const static_urls = value.static_url;
-
-                    console.log(static_urls);
-
-                    const props = {
-                        image : static_urls.thumbs[0],
-                        caption : value.width + " x " + value.height,
-                        fileType : null ,
-                        style : {
-                            width : "200px",
-                            border : "1px solid white",
-                            "verticalAlign" : "middle",
-
-                            // "display": "flex",
-                            // width: "195px",
-                            // height: "185px",
-                            // "margin-top": "20px",
-                            // "align-items": "center",
-                            // "justify-content": "center"
-                        }
-                    }
-
-                    display.push(
-                    <a key={i} href={static_urls.content[0]} target="_blank" rel="noopener noreferrer">
-                        <FileUpload {...props} ></FileUpload>
-                    </a>);
-                }
-
-                setPreview(display);
-        }
-        catch(e)
-        {
-
-        }
     }
     
     return (
