@@ -9,7 +9,7 @@ from . import logging_
 from . import exceptions_
 
 
-IP   = "localhost"
+IP   = "127.0.0.1"
 PORT = "721"
 HOST = "http://{}:{}/".format(IP, PORT)
 
@@ -106,6 +106,13 @@ def __get_for_json_response(*args, **kwargs):
 
         return {}, response.status_code
 
+def get_files():
+
+    _headers = {
+        "accept" : "applications/json",
+    }
+
+    return __get_for_json_response(API_ENDPOINTS['get_files'], headers=_headers)
 
 def get_file_tags(file_id_and_sha256 : list, headers : dict = None):
     

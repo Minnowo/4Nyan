@@ -1,6 +1,9 @@
 import os 
 import hashlib
 import subprocess
+from contextlib import contextmanager
+
+from . import constants_
 from .reg import INVALID_PATH_CHAR, DIGIT
 
 def natural_sort_key(s, _nsre=DIGIT):
@@ -153,13 +156,13 @@ def get_extra_file_hash(path : str) -> tuple:
     
 
 
-def get_temp_file_in_path(path : str):
+def get_temp_file_in_path(path : str, ext='.tmp'):
     """ returns a path in the given folder that does not exist """
 
-    filename = os.path.join(path, os.urandom(32).hex())
+    filename = os.path.join(path, os.urandom(32).hex() + ext)
 
     while os.path.isfile(filename):
-        filename = os.path.join(path, os.urandom(32).hex())
+        filename = os.path.join(path, os.urandom(32).hex() + ext)
 
     return filename
 
@@ -194,3 +197,52 @@ def in_range(item, range : tuple):
     (min, max) = range 
 
     return item >= min and item <= max 
+
+
+
+@contextmanager
+def read_write_file(path, lines, is_bytes = False):
+    """ 
+    reads a file and yields the file object,
+
+    then overwrites the file with the given lines array after the 'with' clause 
+
+    this is used to read a file one line at a time, and if the line matches a matches a condition append a modified string to the lines array, otherwise just append the line 
+    """
+    
+    with open(path, 'r' + 'b' * is_bytes) as file:
+
+        yield file 
+
+    with open(path, 'w' + 'b' * is_bytes) as writer:
+
+        writer.writelines(lines)
+
+
+
+@contextmanager
+def tempfile(mode='w', ext='.mp4', temp_folder=constants_.STATIC_TEMP_PATH, replace_into=None, open_=True):
+
+    try:
+        filename = get_temp_file_in_path(temp_folder, ext)
+        
+        if open_:
+
+            with open(filename, mode) as handle:
+
+                yield handle
+
+        else:
+
+            yield filename
+
+    finally:
+
+        if not replace_into:
+
+            remove_file(filename) 
+        
+        else:
+
+            rename_file(filename, replace_into, replace=True)
+

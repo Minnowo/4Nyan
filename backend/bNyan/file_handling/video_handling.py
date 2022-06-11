@@ -512,45 +512,11 @@ def get_video_information_from_ffmpeg_lines( lines ):
     return vinfo
 
 
-def split_video(video_path : str, output_directory : str, segment_size : int, ts_url : str, vtt_url : str, m3u8_url : str) -> str:
-    """ 
-    process the given video creating an m3u8 files ready for hls, returns the m3u8 path 
-    
-    video_path : the source video path -> str
-    output_directory : the output directory of all the files (assumes empty) -> str
-    segment_size : the size of each ts file in seconds -> int
-    ts_url : the url for ts files, it should include a format template so ts_url.format(ts_filename) adds the path in the correct spot -> str
-    vtt_url : the url for vtt files, it should include a format template so vtt_url.format(vtt_filename) adds the path in the correct spot-> str
-    m3u8_url : the url for m3u8 files, it should include a format template so m3u8_url.format(m3u8_filename) adds the path in the correct spot -> str
-    """
 
-    ff_args = [C.FFMPEG_PATH, '-y', '-v', 'error',
+def run_ffmpeg_standard(ff_args):
 
-                '-i', video_path, 
-
-                '-c:v', 'libx264',
-                '-c:a','aac', 
-                '-c:s', 'webvtt',
-                '-ac', '2',
-
-                '-keyint_min', '48',
-
-                # '-preset','superfast',   # this seems to break the segment size
-                # '-threads', '1',         # reduce cpu but greatly increase time 
-                '-crf', '28',              # unsure what I want for this, likely will be based on file size 
-
-                '-f', 'hls', 
-                '-hls_time', str(segment_size),
-                '-hls_playlist_type','vod', 
-                '-hls_flags', 'independent_segments',
-                '-hls_segment_type', 'mpegts',
-                                              
-                '-hls_segment_filename', os.path.join(output_directory, '%02d.ts'),
-
-                '-master_pl_name', 'master.m3u8',
-
-                 os.path.join(output_directory, 'index.m3u8')]
-
+    if not ff_args:
+        raise exceptions.FFMPEG_Exception("ffmpeg arguments are empty or null")
 
     process = subprocess.Popen( ff_args, bufsize = 10**5, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE )
     
@@ -569,95 +535,7 @@ def split_video(video_path : str, output_directory : str, segment_size : int, ts
         
         raise exceptions.FFMPEG_Exception( non_failing_unicode_decode( data_bytes, 'utf-8' ) )
         
-
     del process
-
-    subs_vtt   = os.path.join(output_directory, "index_vtt.m3u8")
-    index_m3u8 = os.path.join(output_directory, "index.m3u8")
-    master     = os.path.join(output_directory, "master.m3u8")
-
-    subs_exist = os.path.isfile(subs_vtt)
-
-    # if the video had subtitles, this will exist,
-    # so rename them and fix the file 
-    if subs_exist:
-        
-        lines    = []
-        new_name = 0
-        with open(subs_vtt, "r") as reader:
-
-            for line in reader:
-
-                if not line.endswith('.vtt\n'):
-                    lines.append(line)
-                    continue 
-
-                o_name = os.path.join(output_directory, line.rstrip())
-                n_name = "{0:02d}.vtt".format(new_name)
-
-                util.rename_file(o_name, os.path.join(output_directory, n_name), replace=True)
-
-                # assume good input, it's the callers fault if this cannot happen
-                lines.append(vtt_url.format(n_name) + "\n")
-
-                new_name += 1
-
-        with open(subs_vtt, "w") as writer:
-
-            writer.writelines(lines)
-    
-
-    # apply required changes to the index.m3u8 file 
-    lines = []
-    with open(index_m3u8, "r") as reader:
-
-        for line in reader:
-
-            if not line.endswith('.ts\n'):
-                lines.append(line)
-                continue 
-
-            lines.append(ts_url.format(line.rstrip()) + "\n")
-            
-    with open(index_m3u8, "w") as writer:
-
-        writer.writelines(lines)
-
-    # template for subtitles in m3u8 file
-    m3u8_sub_template = '#EXT-X-MEDIA:TYPE=SUBTITLES,URI="{}",GROUP-ID="{}",LANGUAGE="{}",NAME="{}",AUTOSELECT=YES\n'
-
-    # apply required changes to master.m3u8
-    lines = []
-    with open(master, "r") as reader:
-
-        for line in reader:
-            
-            if subs_exist and line.startswith("#EXT-X-STREAM-INF:"):
-                lines.append(m3u8_sub_template.format(m3u8_url.format('index_vtt.m3u8'), "subs", "en", "subtitle track 1"))
-                lines.append(line.rstrip() + ',SUBTITLES="subs"\n')
-                continue 
-
-            if not line.endswith('.m3u8\n'):
-                lines.append(line)
-                continue
-            
-            lines.append(m3u8_url.format(line.rstrip()) + "\n")
-                
-    with open(master, "w") as writer:
-
-        writer.writelines(lines)
-
-
-    result = [
-        master,
-        index_m3u8
-        ]
-
-    if subs_exist:
-        
-        result.append(subs_vtt)
-
-    return result 
 
 
 
@@ -869,4 +747,155 @@ def extract_subs(video_path, output_folder):
     return output_map
 
 
+
+def encode_video_standard(video_path : str, output_path : str):
+    
+    # https://superuser.com/questions/859010/what-ffmpeg-command-line-produces-video-more-compatible-across-all-devices
+    
+    ff_args = [
+        C.FFMPEG_PATH, '-y', '-v', 'error',
+
+        '-i', video_path, 
+
+        '-c:v', 'libx264',
+        
+        '-c:a','aac', 
+        '-ac' , '2',
+
+        '-c:s', 'mov_text', # only sub format mp4 container supports 
+
+        '-r', '23.976',
+        '-g', '48',
+        '-keyint_min', '48',
+
+        '-profile:v', 'baseline', 
+        '-level', '3.0', 
+        '-pix_fmt', 'yuv420p',
+        '-movflags', 'faststart',
+
+        # '-threads', '1',         # reduce cpu but greatly increase time 
+
+        '-crf', '28',
+
+        '-f', 'mp4', 
+
+        output_path
+    ]
+
+    util.create_directory_from_file_name(output_path)
+
+    run_ffmpeg_standard(ff_args)
+
+
+
+
+def split_encoded_video(video_path : str, output_directory : str, segment_size : int, ts_url, m3u8_url):
+    """
+    splits the given video and copies audio and video codecs removing subtitles
+
+    ts_url and m3u8_url should contain {} to allow the use of str.format(x)
+    """
+
+    util.create_directory(output_directory)
+
+    ff_args = [
+        C.FFMPEG_PATH, '-y', '-v', 'error',
+
+        '-i', video_path, 
+
+        '-c', 'copy',
+
+        '-sn', # remove subs 
+
+        '-f', 'hls', 
+        '-hls_time', str(segment_size),
+        '-hls_playlist_type', 'vod', 
+        '-hls_flags', 'independent_segments',
+        '-hls_segment_type', 'mpegts',
+                                        
+        '-hls_segment_filename', os.path.join(output_directory, '%02d.ts'),
+
+        '-master_pl_name', 'master.m3u8',
+
+        os.path.join(output_directory, 'index.m3u8')
+    ] 
+
+    run_ffmpeg_standard(ff_args)
+
+    # subs_vtt   = os.path.join(output_directory, "index_vtt.m3u8")
+    index_m3u8 = os.path.join(output_directory, "index.m3u8")
+    master     = os.path.join(output_directory, "master.m3u8")
+
+    # subs_exist = os.path.isfile(subs_vtt)
+
+    # if the video had subtitles, this will exist,
+    # so rename them and fix the file 
+    # lines    = []
+    # if subs_exist:
+        
+    #     new_name = 0
+
+    #     with util.read_write_file(subs_vtt, lines) as raw:
+
+    #         for line in raw:
+
+    #             if not line.endswith('.vtt\n'):
+    #                 lines.append(line)
+    #                 continue 
+
+    #             o_name = os.path.join(output_directory, line.rstrip())
+    #             n_name = "{0:02d}.vtt".format(new_name)
+
+    #             util.rename_file(o_name, os.path.join(output_directory, n_name), replace=True)
+
+    #             # creating a template file, this file will get formatted when the m3u8 is requested 
+    #             # {URL}00.vtt -> http://...00.vtt
+    #             lines.append("{URL}" + n_name + "\n")
+
+    #             new_name += 1
+    
+
+    # apply required changes to the index.m3u8 file 
+    lines = []
+    with util.read_write_file(index_m3u8, lines) as raw:
+
+        for line in raw:
+
+            if not line.endswith('.ts\n'):
+                lines.append(line)
+                continue 
+
+            lines.append("{ADD}" + ts_url.format(line.rstrip()) + "\n")
+
+
+    # template for subtitles in m3u8 file
+    # m3u8_sub_template = '#EXT-X-MEDIA:TYPE=SUBTITLES,URI="{}",GROUP-ID="{}",LANGUAGE="{}",NAME="{}",AUTOSELECT=YES\n'
+
+    # apply required changes to master.m3u8
+    lines *= 0 # lines = []
+    with util.read_write_file(master, lines) as raw:
+
+        for line in raw:
+            
+            # if subs_exist and line.startswith("#EXT-X-STREAM-INF:"):
+            #     lines.append(m3u8_sub_template.format('{SUB_URL}index_vtt.m3u8', "subs", "en", "subtitle track 1"))
+            #     lines.append(line.rstrip() + ',SUBTITLES="subs"\n')
+            #     continue 
+
+            if not line.endswith('.m3u8\n'):
+                lines.append(line)
+                continue
+            
+            lines.append("{ADD}" + m3u8_url.format(line.rstrip()) + "\n")
+                
+    result = [
+        master,
+        index_m3u8
+    ]
+
+    # if subs_exist:
+        
+    #     result.append(subs_vtt)
+
+    return result 
 

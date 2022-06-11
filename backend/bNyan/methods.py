@@ -1,5 +1,6 @@
 import os 
 import hashlib
+import io
 
 from fastapi.responses import FileResponse
 from fastapi import Response, UploadFile, HTTPException, Request
@@ -270,12 +271,10 @@ def _get_video(video_name : tuple, request : Request):
 
         data = reader.read(total_response_size)
 
-        
         return Response(data, status_code=constants_.status_codes.RESPONSE, headers=headers) 
 
 
 def _get_m3u8(m3u8_path : tuple, request : Request):
-
 
     name_check(m3u8_path)
 
@@ -292,7 +291,13 @@ def _get_m3u8(m3u8_path : tuple, request : Request):
 
     m3u8_path = get_clean_name(os.path.join(dire, file), constants_.STATIC_M3U8_PATH)
     
-    return FileResponse(m3u8_path, status_code=constants_.status_codes.RESPONSE, headers=headers)
+    with open(m3u8_path, 'r') as reader:
+
+        text = reader.read().format(ADD="http://" + config.get((), "server_address"))
+
+        return Response(text, status_code=constants_.status_codes.RESPONSE, headers=headers)
+
+    # return FileResponse(output, status_code=constants_.status_codes.RESPONSE, headers=headers)
 
 
 
@@ -410,7 +415,7 @@ def process_video(data):
 
     try:
 
-        address = config.get((), "server_address")
+        # address = config.get((), "server_address")
 
         sha256_hex   = data['sha256_hex']
         source_video = data['file_path']
@@ -418,8 +423,8 @@ def process_video(data):
         ts_folder   = os.path.join( constants_.STATIC_VIDEO_PATH   , sha256_hex[0:2], sha256_hex )
         subs_folder = os.path.join( constants_.STATIC_SUBTITLE_PATH, sha256_hex[0:2], sha256_hex )
 
-        ts_url    = "http://{}/{}/{}?ts={}".format(address, constants_.STATIC_VIDEO_ROUTE, sha256_hex, '{}')
-        m3u8_url  = "http://{}/{}/{}?ts={}".format(address, constants_.STATIC_M3U8_ROUTE , sha256_hex, '{}')
+        ts_url    = "/{}/{}?ts=".format(constants_.STATIC_VIDEO_ROUTE, sha256_hex) + '{}'
+        m3u8_url  = "/{}/{}?ts=".format(constants_.STATIC_M3U8_ROUTE , sha256_hex) + '{}'
     
     except KeyError as e:
     
@@ -427,19 +432,7 @@ def process_video(data):
         return
 
 
-    try:
-
-        m3u8 = file_handling.video_handling.split_video(source_video, ts_folder, 6, ts_url, ts_url, m3u8_url)
-
-    except exceptions.FFMPEG_Exception as e:
-
-        LOGGER.error(e, stack_info=True)
-        
-        util.remove_file(source_video)
-
-        return 
-
-
+    # extract subs first because they will get lost during encoding 
     try:
 
         subs = file_handling.video_handling.extract_subs(source_video, subs_folder)
@@ -449,6 +442,22 @@ def process_video(data):
         subs = None 
 
         LOGGER.warning("Exception extracting subtitles from video {}".format(e), stack_info=True)
+
+    try:
+
+        with util.tempfile(ext='.mp4', open_=False, replace_into=source_video) as temp_path:
+        
+            file_handling.video_handling.encode_video_standard(source_video, temp_path)
+
+        m3u8 = file_handling.video_handling.split_encoded_video(source_video, ts_folder, 6, ts_url, m3u8_url)
+
+    except exceptions.FFMPEG_Exception as e:
+
+        LOGGER.error(e, stack_info=True)
+        
+        util.remove_file(source_video)
+
+        return 
 
     m3u8_directory = os.path.join(constants_.STATIC_M3U8_PATH, sha256_hex[0:2], sha256_hex)
     
