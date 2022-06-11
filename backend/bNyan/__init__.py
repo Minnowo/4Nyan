@@ -48,6 +48,49 @@ app.add_middleware(
 )
 
 
+@app.post("/delete/file")
+async def delete_file(request : Request, file : Union[int, str, List[Union[int, str]]]):
+    
+    if not file:
+        raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+
+    if isinstance(file, str):
+        
+        if not reg.IS_RAW_HEXADECIMAL.match(file):
+            raise exceptions.API_400_BAD_REQUEST_EXCEPTION
+
+        f = database.Methods.remove_file(bytes.fromhex(file))
+
+        if f:
+            util.remove_file_db(f)
+
+        return 
+        
+
+    if isinstance(file, int):
+        
+        f = database.Methods.remove_file(file)
+
+        if f:
+            util.remove_file_db(f)
+
+        return 
+
+    
+    for x in database.Methods.remove_files(
+                        i if isinstance(i, int) else bytes.fromhex(i) 
+        
+                        for i in file 
+        
+                        if isinstance(i, int) or 
+                            isinstance(i, str) and reg.IS_RAW_HEXADECIMAL.match(i)
+                        ):
+
+        util.remove_file_db(x)
+
+
+
+
 @app.get("/search/get_file_tags")
 async def search_tags(request : Request, fid : List[int] = Query(None), fh : List[str] = Query(None)):
 

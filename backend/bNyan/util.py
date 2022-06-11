@@ -1,15 +1,63 @@
 import os 
 import hashlib
 import subprocess
+import shutil
 from contextlib import contextmanager
 
 from . import constants_
+from .models import File
 from .reg import INVALID_PATH_CHAR, DIGIT
 
 def natural_sort_key(s, _nsre=DIGIT):
     """    Provides a natural sort when used with sort(list, key=natural_sort_key) or sorted(list, key=natural_sort_key) """
     return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 
+
+def get_static_route_from_mime(mime : int):
+    """ returns the static route where a file should be accessed via the static url from the given mime type """
+    
+    if in_range(mime, constants_.mime_types.IMAGE_MIME_RANGE):
+        return constants_.STATIC_IMAGE_ROUTE
+
+    if in_range(mime, constants_.mime_types.VIDEO_MIME_RANGE):
+        return constants_.STATIC_VIDEO_ROUTE
+
+    if in_range(mime, constants_.mime_types.AUDIO_MIME_RANGE):
+        return constants_.STATIC_AUDIO_ROUTE
+
+    # if mime in MT.IMAGE_MIMES:
+    #     return constants_.STATIC_IMAGE_ROUTE
+
+    # if mime in MT.VIDEO_MIMES:
+    #     return constants_.STATIC_VIDEO_ROUTE
+
+    # if mime in  MT.AUDIO_MIMES:
+    #     return constants_.STATIC_VIDEO_ROUTE
+
+    return "None" 
+
+def get_static_path_from_mime(mime : int):
+    """ returns the static path where a file should be stored based of the given mime type """
+
+    if in_range(mime, constants_.mime_types.IMAGE_MIME_RANGE):
+        return constants_.STATIC_IMAGE_PATH
+
+    if in_range(mime, constants_.mime_types.VIDEO_MIME_RANGE):
+        return constants_.STATIC_VIDEO_PATH
+        
+    if in_range(mime, constants_.mime_types.AUDIO_MIME_RANGE):
+        return constants_.STATIC_AUDIO_PATH
+
+    # if mime in MT.IMAGE_MIMES:
+    #     return constants_.STATIC_IMAGE_PATH
+
+    # if mime in MT.VIDEO_MIMES:
+    #     return constants_.STATIC_VIDEO_PATH
+
+    # if mime in  MT.AUDIO_MIMES:
+    #     return constants_.STATIC_AUDIO_PATH
+
+    return constants_.STATIC_TEMP_PATH
 
 
 def strip_invalid_path(path : str) -> str:
@@ -33,24 +81,44 @@ def create_directory(path : str) -> bool:
     return os.path.isdir(path)
 
 
+def remove_file_db(file : File):
+    """ Deletes the given file """
+
+    sha256_hex = file.hash.hex()
+
+    file_ext = constants_.MIME_EXT_LOOKUP.get(file.mime, "")
+
+    base = os.path.join(get_static_path_from_mime(file.mime), sha256_hex[0:2], sha256_hex)
+
+    filename = base + file_ext
+
+    if in_range(file.mime, constants_.mime_types.IMAGE_MIME_RANGE):
+        return remove_file(filename)
+ 
+    return remove_file(filename) and \
+           remove_directory(base) and \
+           remove_directory(os.path.join(constants_.STATIC_M3U8_PATH, sha256_hex[0:2], sha256_hex))
+
 
 def remove_file(path : str) -> bool:
     """    Deletes the given file.    """
     try:
         os.unlink(path)
+        return True 
     except OSError:
         pass
-    return not os.path.exists(path)
+    return False 
 
 
 
 def remove_directory(path : str) -> bool:
     """    Deletes the given directory.    """
     try:
-        os.rmdir(path)
+        shutil.rmtree(path, ignore_errors=False)
+        return True 
     except OSError:
-        pass
-    return not os.path.isdir(path)
+        pass 
+    return False 
 
 
 

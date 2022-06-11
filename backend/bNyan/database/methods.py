@@ -13,7 +13,7 @@ from .. import bn_logging
 from ..reg import HAS_INVALID_PASSWORD_CHARACTERS, HAS_INVALID_USERNAME_CHARACTERS, TAG
 
 from datetime import datetime 
-
+from typing import Union, List 
 from sqlalchemy import select, and_, or_
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
@@ -346,20 +346,86 @@ def get_file_tags_from_id(file_id : int ):
             )
 
 
-
-def remove_file(hash : bytes):
-    """ removes the file from the database, returns True if the file is not found or removed """
+def remove_files(hash_and_ids : List[Union[bytes, int]]):
+    
     with Session.begin() as session:
 
-        result = session.query(TBL_Hash).filter_by(hash = hash).first()
-        
-        if not result:
-            return True 
+        for i in hash_and_ids:
 
-        session.delete(result)
+            if isinstance(i, int):
+                r = session.query(TBL_Hash).filter_by(hash_id = i).first()
+
+            else:
+
+                r = session.query(TBL_Hash).filter_by(hash = i).first()
+            
+            if not r:
+                return None 
+
+            for i in session.query(TBL_Tag_Map).filter_by(hash_id = r.hash_id).all(): 
+                session.delete(i)
+
+            for i in session.query(TBL_Group_Map).filter_by(hash_id = r.hash_id).all(): 
+                session.delete(i)
+
+            for i in session.query(TBL_Watched).filter_by(hash_id = r.hash_id).all(): 
+                session.delete(i)
+    
+            session.delete(r)
+
+            yield models.File(
+                    hash_id    = r.hash_id,
+                    hash       = r.hash,
+                    size       = r.size,
+                    mime       = r.mime,
+                    width      = r.width,
+                    height     = r.height,
+                    duration   = r.duration,
+                    has_audio  = r.has_audio,
+                    date_added = r.date_added
+                )  
+            
+        session.commit()
+        
+
+def remove_file(hash : Union[bytes, int]):
+    """ removes the file from the database, returns True if the file is not found or removed """
+
+    with Session.begin() as session:
+
+        if isinstance(hash, int):
+            r = session.query(TBL_Hash).filter_by(hash_id = hash).first()
+
+        else:
+
+            r = session.query(TBL_Hash).filter_by(hash = hash).first()
+        
+        if not r:
+            return None 
+
+        for i in session.query(TBL_Tag_Map).filter_by(hash_id = r.hash_id).all(): 
+            session.delete(i)
+
+        for i in session.query(TBL_Group_Map).filter_by(hash_id = r.hash_id).all(): 
+            session.delete(i)
+
+        for i in session.query(TBL_Watched).filter_by(hash_id = r.hash_id).all(): 
+            session.delete(i)
+ 
+        session.delete(r)
         session.commit()
 
-        return True 
+        return models.File(
+                hash_id    = r.hash_id,
+                hash       = r.hash,
+                size       = r.size,
+                mime       = r.mime,
+                width      = r.width,
+                height     = r.height,
+                duration   = r.duration,
+                has_audio  = r.has_audio,
+                date_added = r.date_added
+            ) 
 
 
 def add_file(file : models.File) -> None:
@@ -374,15 +440,15 @@ def add_file(file : models.File) -> None:
             raise exceptions.API_409_FILE_EXISTS_EXCEPTION 
         
         new_file = TBL_Hash(
-                            hash       = file.hash,
-                            size       = file.size,
-                            mime       = file.mime,
-                            width      = file.width,
-                            height     = file.height,
-                            duration   = file.duration,
-                            has_audio  = file.has_audio,
-                            date_added = datetime.now().astimezone()
-                        ) 
+            hash       = file.hash,
+            size       = file.size,
+            mime       = file.mime,
+            width      = file.width,
+            height     = file.height,
+            duration   = file.duration,
+            has_audio  = file.has_audio,
+            date_added = datetime.now().astimezone()
+        ) 
         
         session.add(new_file)
         

@@ -249,9 +249,6 @@ def _get_video(video_name : tuple, request : Request):
 
     video_path = get_clean_name(os.path.join(dire, file), constants_.STATIC_VIDEO_PATH)
 
-    # file name check
-    # video_name = clean_path(video_name, constants_.STATIC_VIDEO_PATH, [reg.INVALID_PATH_WITHOUT_SEP.sub]) # allow / and \ in the path name
-    
     total_response_size = os.stat(video_path).st_size
 
     headers={
@@ -261,8 +258,6 @@ def _get_video(video_name : tuple, request : Request):
             "Content-Disposition": 'attachment; filename="{}"'.format(file),
         }
 
-    if video_path.endswith(".vtt"):
-        headers["Content-Type"] = "text/vtt"
 
     if request.method == "HEAD":
         return headers 

@@ -1,18 +1,11 @@
 import threading 
 
 
-from . import exceptions
-from . import bn_logging
-from . import constants_
-
-
 _threads = {
 
 }
 
 lock = threading.Lock()
-
-LOGGER = bn_logging.get_logger(constants_.BNYAN_THREADS[0], constants_.BNYAN_THREADS[1])
 
 class Worker_Queue():
 
@@ -37,19 +30,17 @@ class Worker_Queue():
         
         self.callback = callback 
    
-    def enqueue_callback(self, item, callback, set_flag = True):
+    def enqueue_callback(self, item, callback):
 
         self.__callbacks.append(callback)
         self.__items.append(item)
-
-        if set_flag:
-            self.__signal.set()
+        self.__signal.set()
 
     def enqueue(self, item, set_flag = True):
         # enqueue the item and set the flag -> True 
         self.__callbacks.append(self.__callback)
         self.__items.append(item)
-        
+
         if set_flag:
             self.__signal.set()
 
@@ -111,8 +102,6 @@ def cleanup_all_threads():
 
     for (key, value) in _threads.items():
 
-        LOGGER.info("Cleaning thread: {}".format(key))
-
         value.cleanup()
         
         del value 
@@ -125,11 +114,9 @@ def spawn_worker_thread(thread_name : str, callback):
 
     """ creates a worker thread with the given name """
 
-    LOGGER.info("Spawning worker thread: '{}'".format(thread_name))
-
     if thread_name in _threads:
 
-        raise exceptions.Thread_Exists_Exception("Cannot create a thread with the name: '{}'".format(thread_name))
+        raise Exception("Cannot create a thread with the name: '{}'".format(thread_name))
 
     worker = Worker_Queue(callback)
 
@@ -138,43 +125,41 @@ def spawn_worker_thread(thread_name : str, callback):
 
 
 
-def append_worker_data(thread_name : str, data, callback = None, is_single_use_callback = True, set_flag = True ):
+def append_worker_data(thread_name : str, data, callback = None, is_single_use_callback = True ):
 
     """ adds data to an exsiting worker thread, if the callback is specified it will be used instead of the default """
 
     if thread_name not in _threads:
-        raise exceptions.Thread_Does_Not_Exists_Exception("The thread '{}' is not in the pool".format(thread_name))
+        raise Exception("The thread '{}' is not in the pool".format(thread_name))
 
     worker = _threads[thread_name]
 
     if callback:
 
         if is_single_use_callback:
-            worker.enqueue_callback(data, callback, set_flag)
+            worker.enqueue_callback(data, callback)
             return 
 
         worker.update_callback(callback)
 
-    worker.enqueue(data, set_flag)
+    worker.enqueue(data)
 
 
 
 
 
 
-def spawn_timer_thread(thread_name : str, callback, interval : float):
 
-    """ creates a worker thread with the given name """
+a = Worker_Queue(lambda x : print(x), 5)
 
-    LOGGER.info("Spawning timer thread: '{}', with interval: {}".format(thread_name, interval))
-
-    if thread_name in _threads:
-
-        raise exceptions.Thread_Exists_Exception("Cannot create a thread with the name: '{}'".format(thread_name))
-
-    worker = Worker_Queue(callback, interval)
-
-    _threads[thread_name] = worker 
+a.enqueue("hello", False)
+a.enqueue("hello", False)
+a.enqueue("hello", False)
+a.enqueue("hello", False)
 
 
+import time 
+
+time.sleep(20)
+a.cleanup()
 

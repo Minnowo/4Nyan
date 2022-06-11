@@ -20,6 +20,7 @@ API_ENDPOINTS = {
     'tag_file'    : HOST + "create/map",
     'create_user' : HOST + "create/user",
     'login'       : HOST + "auth/token",
+    'delete_file' : HOST + "delete/file",
 
     # get requests
     'heartbeat'      : HOST + "heartbeat",
@@ -105,6 +106,18 @@ def __get_for_json_response(*args, **kwargs):
         __LOGGER.error(e, stack_info=True)
 
         return {}, response.status_code
+
+
+def delete_files(file_id_and_sha256 : list, headers : dict = None):
+    
+    _headers = {
+        'conotent-type' : 'application/json'
+    }
+
+    if headers:
+        _headers.update(headers)
+
+    return __post_for_empty_response(API_ENDPOINTS['delete_file'], json=file_id_and_sha256, headers=_headers)
 
 def get_files():
 
