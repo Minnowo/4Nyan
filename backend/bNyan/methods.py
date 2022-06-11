@@ -113,52 +113,6 @@ def clean_path(path : str, rout : str, cleans=[reg.INVALID_PATH_CHAR.sub]):
     return path 
 
 
-def get_static_route_from_mime(mime : int):
-    """ returns the static route where a file should be accessed via the static url from the given mime type """
-    
-    if util.in_range(mime, constants_.mime_types.IMAGE_MIME_RANGE):
-        return constants_.STATIC_IMAGE_ROUTE
-
-    if util.in_range(mime, constants_.mime_types.VIDEO_MIME_RANGE):
-        return constants_.STATIC_VIDEO_ROUTE
-
-    if util.in_range(mime, constants_.mime_types.AUDIO_MIME_RANGE):
-        return constants_.STATIC_AUDIO_ROUTE
-
-    # if mime in MT.IMAGE_MIMES:
-    #     return constants_.STATIC_IMAGE_ROUTE
-
-    # if mime in MT.VIDEO_MIMES:
-    #     return constants_.STATIC_VIDEO_ROUTE
-
-    # if mime in  MT.AUDIO_MIMES:
-    #     return constants_.STATIC_VIDEO_ROUTE
-
-    return "None" 
-
-def get_static_path_from_mime(mime : int):
-    """ returns the static path where a file should be stored based of the given mime type """
-
-    if util.in_range(mime, constants_.mime_types.IMAGE_MIME_RANGE):
-        return constants_.STATIC_IMAGE_PATH
-
-    if util.in_range(mime, constants_.mime_types.VIDEO_MIME_RANGE):
-        return constants_.STATIC_VIDEO_PATH
-        
-    if util.in_range(mime, constants_.mime_types.AUDIO_MIME_RANGE):
-        return constants_.STATIC_AUDIO_PATH
-
-    # if mime in MT.IMAGE_MIMES:
-    #     return constants_.STATIC_IMAGE_PATH
-
-    # if mime in MT.VIDEO_MIMES:
-    #     return constants_.STATIC_VIDEO_PATH
-
-    # if mime in  MT.AUDIO_MIMES:
-    #     return constants_.STATIC_AUDIO_PATH
-
-    return constants_.STATIC_TEMP_PATH
-
 
 
 
@@ -581,7 +535,7 @@ async def process_file_upload(file : UploadFile):
     sha256_hex   = sha256_bytes.hex()
     file_size    = os.path.getsize(tempname)
 
-    static_path = get_static_path_from_mime(mime)
+    static_path = util.get_static_path_from_mime(mime)
     filename    = os.path.join(static_path, sha256_hex[0:2], sha256_hex + file_ext)
 
     # rename the file

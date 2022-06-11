@@ -148,7 +148,7 @@ async def search_files(request : Request,
     files = [ ]
     for file in database.Methods.search_files(search):
 
-        if methods.get_static_route_from_mime(file.mime) == 'None':
+        if util.get_static_route_from_mime(file.mime) == 'None':
             continue
 
         # convert the hash to hex so it's json safe 
@@ -161,7 +161,7 @@ async def search_files(request : Request,
         ending  = file.hash + constants_.MIME_EXT_LOOKUP.get(file.mime, "") 
 
         urls    = {
-            "content" : [ leading + methods.get_static_route_from_mime(file.mime) + "/" + ending ],
+            "content" : [ leading + util.get_static_route_from_mime(file.mime) + "/" + ending ],
             "thumbs"  : [ leading + constants_.STATIC_THUMBNAIL_ROUTE + "/" + file.hash + ".jpg" ],
             "subs"    : []
         }
