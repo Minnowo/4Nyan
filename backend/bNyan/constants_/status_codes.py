@@ -1,8 +1,0 @@
-
-
-
-
-PARTIAL_RESPONSE = 206
-RESPONSE = 200
-
-
