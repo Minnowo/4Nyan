@@ -312,6 +312,16 @@ def time_delta_to_pretty_time_delta(seconds, show_seconds=True):
     return "{} microseconds".format(int(seconds * 1000000))
 
 
+def get_file_extension(path: str, do_not_include_dot: bool = False):
+
+    index = path.rfind(".")
+
+    if index == -1:
+        return ""
+
+    return path[index + do_not_include_dot :]
+
+
 class Call(object):
     def __init__(self, func, *args, **kwargs):
 

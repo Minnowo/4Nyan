@@ -11,7 +11,7 @@ class Token(BaseModel):
     token_type: str
 
 
-class TokenData(BaseModel):
+class Token_Data(BaseModel):
     username: str = None
 
 
@@ -35,7 +35,7 @@ class File_Response(File):
     static_url: dict = None
 
 
-class FileSearch(BaseModel):
+class File_Search(BaseModel):
 
     sort_asc: bool = True
     sort_type: int = 0
@@ -74,11 +74,11 @@ class User(BaseModel):
     create_at: datetime = None
 
 
-class UserIn(User):
+class User_In(User):
     password: str
 
 
-class UserAuthIn(User):
+class User_Auth_In(User):
     hashed_password: str
 
 
@@ -87,6 +87,6 @@ class Login(BaseModel):
     password: str
 
 
-class AccessToken(BaseModel):
+class Access_Token(BaseModel):
     token: bytes
     token_type: str

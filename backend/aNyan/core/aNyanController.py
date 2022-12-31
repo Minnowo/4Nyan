@@ -214,7 +214,7 @@ class Nyan_Controller(object):
 
         if aNyanGlobals.model_shutdown:
 
-            self._pubsub.pubimmediate(topic, *args, **kwargs)
+            self._pubsub.pubimmediately_here(topic, *args, **kwargs)
 
         else:
 
@@ -222,7 +222,7 @@ class Nyan_Controller(object):
 
     def pubimmediate(self, topic: str, *args, **kwargs):
 
-        self._pubsub.pubimmediate(topic, *args, **kwargs)
+        self._pubsub.pubimmediately_here(topic, *args, **kwargs)
 
     def sub(self, object: object, method_name: str, topic: str):
 

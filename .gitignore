@@ -5,6 +5,11 @@
 *.idea/
 *video-test/
 
+*.png
+*.jpg
+*.jpeg
+*.db
+*.sqlite
 *.mp4
 *.mkv
 *.vtt

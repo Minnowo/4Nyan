@@ -64,3 +64,7 @@ class Data_Missing(bNyan_Exception):
 
 class Failed_To_Render_With_OpenCV_Exception(bNyan_Exception):
     """raised when openCV cannot render stuff"""
+
+
+class DB_Access_Exception(bNyan_Exception):
+    """database error"""

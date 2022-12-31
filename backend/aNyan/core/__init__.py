@@ -1,13 +1,21 @@
-# set the START_TIME constant as soon as possible
-# should be set at process start, only used if psutil is not found
-from . import aNyanConstants
-from . import aNyanThreading
-from . import aNyanController
-from . import aNyanLogging
-from . import aNyanGlobals
-from . import aNyanData
+from . import (
+    aNyanConstants,
+    aNyanController,
+    aNyanData,
+    aNyanDB,
+    aNyanExceptions,
+    aNyanGlobals,
+    aNyanLogging,
+    aNyanPaths,
+    aNyanPubSub,
+    aNyanTemp,
+    aNyanThreading,
+)
 
+import logging
+import threading
 import shlex
+import sqlite3
 
 
 def useful_thread_callback(controller, nyah):
@@ -17,14 +25,14 @@ def useful_thread_callback(controller, nyah):
     print(aNyanGlobals.debug_value)
 
 
-def main():
-    aNyanGlobals.daemon_report_mode = True
-    aNyanLogging.setup_logger("./logs.log")
+def threading_test(controller=None):
 
     try:
-        controller = aNyanController.Nyan_Controller("./db")
-        controller.record_running_start()
-        controller.init_model()
+
+        if controller is None:
+            controller = aNyanController.Nyan_Controller("./db")
+            controller.record_running_start()
+            controller.init_model()
 
         # thred = aNyanThreading.Daemon_Worker(controller, "test-daemon-thread", useful_thread_callback, period=10)
         thred = aNyanThreading.Threadcall_To_Thread(controller, "threadcall")
@@ -60,3 +68,97 @@ def main():
         controller.shutdown_model()
         controller.shutdown_view()
         controller.clean_running_file()
+
+
+def test_pubsub(controller=None):
+    class subscriber:
+        def on_notification(self, *args, **kwargs):
+
+            print("Got notification:", *args, "on thread:", threading.current_thread().getName())
+
+    thread = aNyanThreading.Threadcall_To_Thread(None, "pubsub_process_call_to_thread")
+    pubsub = aNyanPubSub.Nyan_PubSub()
+
+    global is_shutting_down
+
+    is_shutting_down = False
+
+    def pubsub_daemon(pubsub: aNyanPubSub.Nyan_PubSub):
+
+        global is_shutting_down
+
+        while not is_shutting_down:
+
+            if pubsub.work_to_do():
+
+                try:
+                    pubsub.process()
+
+                except Exception as e:
+                    logging.error(e, stack_info=True)
+
+            else:
+                pubsub.wait_on_pub()
+
+    # put the pubsub daemon callback into the thread
+    # this will overtake run until is_shutting_down is set
+    thread.put(pubsub_daemon, pubsub)
+
+    # make some dummy subscribers
+    subs = [subscriber() for i in range(3)]
+
+    topic = "TOPIC"
+
+    # sub up
+    for sub in subs:
+        pubsub.sub(sub, "on_notification", topic)
+
+    # this will send a notification instantely
+    pubsub.pubimmediately_here("TOPIC", "here is a notification")
+
+    try:
+        thread.start()
+        while True:
+
+            i = input().lower()
+
+            if i == "exit":
+                return
+
+            if i.startswith("pub "):
+
+                args = shlex.split(i)
+
+                if len(args) < 2:
+                    continue
+
+                pubsub.pub(topic, args[1:])
+
+            elif i.startswith("pubi "):
+
+                args = shlex.split(i)
+
+                if len(args) < 2:
+                    continue
+
+                pubsub.pubimmediately_here(topic, args[1:])
+
+    except Exception as e:
+        logging.error(e)
+
+    finally:
+
+        is_shutting_down = True
+        pubsub.wake()  # optional to make it shutdown faster
+        thread.shutdown()
+
+
+def main():
+    aNyanGlobals.daemon_report_mode = True
+    aNyanLogging.setup_logger("./logs.log")
+
+    # controller = aNyanController.Nyan_Controller("./db")
+    # controller.record_running_start()
+    # controller.init_model()
+
+    test_pubsub()

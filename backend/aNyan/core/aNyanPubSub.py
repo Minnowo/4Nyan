@@ -1,6 +1,7 @@
 import threading
 import weakref
 import logging
+from typing import Callable
 
 from . import aNyanData
 from . import aNyanExceptions
@@ -8,9 +9,12 @@ from . import aNyanGlobals
 
 
 class Nyan_PubSub(object):
-    def __init__(self, controller, valid_callable):
+    def __init__(self, valid_callable: Callable = None):
 
-        self._controller = controller
+        if valid_callable is None:
+
+            valid_callable = lambda x: True
+
         self._valid_callable = valid_callable
 
         self._doing_work = False
@@ -102,37 +106,36 @@ class Nyan_PubSub(object):
 
                         logging.info((topic, args, kwargs, callable_tuples))
 
-                    if False and aNyanGlobals.profile_mode and not_a_report:
-                        pass
-                        # summary = "Profiling pubsub: {}".format(topic)
+                    # if aNyanGlobals.profile_mode and not_a_report:
+                    #     summary = "Profiling pubsub: {}".format(topic)
 
-                        # for (obj, callable) in callable_tuples:
+                    #     for (obj, callable) in callable_tuples:
 
-                        #     try:
+                    #         try:
 
-                        #         aNyanData.profile(
-                        #             summary,
-                        #             "callable( *args, **kwargs )",
-                        #             globals(),
-                        #             locals(),
-                        #             min_duration_ms=aNyanGlobals.pubsub_profile_min_job_time_ms,
-                        #         )
+                    #             aNyanData.profile(
+                    #                 summary,
+                    #                 "callable( *args, **kwargs )",
+                    #                 globals(),
+                    #                 locals(),
+                    #                 min_duration_ms=aNyanGlobals.pubsub_profile_min_job_time_ms,
+                    #             )
 
-                        #     except aNyanExceptions.Shutdown_Exception:
+                    #         except aNyanExceptions.Shutdown_Exception:
 
-                        #         return False
+                    #             return False
 
-                    else:
+                    # else:
 
-                        for (obj, callable) in callable_tuples:
+                    for (obj, callable) in callable_tuples:
 
-                            try:
+                        try:
 
-                                callable(*args, **kwargs)
+                            callable(*args, **kwargs)
 
-                            except aNyanExceptions.Shutdown_Exception:
+                        except aNyanExceptions.Shutdown_Exception:
 
-                                return False
+                            return False
 
                 except Exception as e:
 
@@ -144,13 +147,17 @@ class Nyan_PubSub(object):
 
     def pub(self, topic: str, *args, **kwargs):
 
+        """pushes the notification and sets the event"""
+
         with self._lock:
 
             self._pubsubs.append((topic, args, kwargs))
 
         self._pub_event.set()
 
-    def pubimmediate(self, topic: str, *args, **kwargs):
+    def pubimmediately_here(self, topic: str, *args, **kwargs):
+
+        """pubs on the current thread right here"""
 
         with self._lock:
 
@@ -173,9 +180,9 @@ class Nyan_PubSub(object):
             self._topics_to_objects[topic].add(object)
             self._topics_to_method_names[topic].add(method_name)
 
-    def wait_on_pub(self):
+    def wait_on_pub(self, timeout: float = 3):
 
-        self._pub_event.wait(3)
+        self._pub_event.wait(timeout)
 
         self._pub_event.clear()
 
