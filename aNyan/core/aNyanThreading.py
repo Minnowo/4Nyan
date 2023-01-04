@@ -1,17 +1,21 @@
 import threading
 import subprocess
-import logging
 import time
 import queue
 import traceback
 import os
 import random
 import bisect
+from typing import Callable, TYPE_CHECKING
 
 from . import aNyanData
 from . import aNyanExceptions
 from . import aNyanGlobals
-from . import aNyanGlobals
+from . import aNyanLogging as logging
+
+if TYPE_CHECKING:
+    from . import aNyanController
+
 
 NEXT_THREAD_CLEAROUT = 0
 
@@ -285,7 +289,7 @@ class Daemon_Foreground_Worker(Daemon_Worker):
         return self._controller.good_time_to_start_background_work()
 
 
-class Threadcall_To_Thread(Daemon):
+class Thread_Call_To_Thread(Daemon):
     """
     A Daemon Worker thread.
 
@@ -294,17 +298,17 @@ class Threadcall_To_Thread(Daemon):
     This thread waits until a given callback is recieved before performing any jobs.
     """
 
-    def __init__(self, controller, name):
+    def __init__(self, controller: "aNyanController.Nyan_Controller", name: str):
 
         Daemon.__init__(self, controller, name)
 
         self._callable = None
 
-        self._queue = queue.Queue()
+        self._queue: queue.Queue[tuple[Callable]] = queue.Queue()
 
         self._currently_working = True  # start off true so new threads aren't used twice by two quick successive calls
 
-    def currently_working(self):
+    def is_currently_working(self):
 
         return self._currently_working
 
@@ -312,7 +316,7 @@ class Threadcall_To_Thread(Daemon):
 
         return self._callable
 
-    def put(self, callable, *args, **kwargs):
+    def put(self, callable: Callable, *args, **kwargs):
 
         self._currently_working = True
 
@@ -501,7 +505,7 @@ class Job_Scheduler(threading.Thread):
 
         with self._waiting_lock:
 
-            self._waiting = [job for job in self._waiting if not job.IsDead()]
+            self._waiting = [job for job in self._waiting if not job.is_dead()]
 
     def get_name(self):
 
@@ -598,7 +602,13 @@ class Schedulable_Job(object):
 
     PRETTY_CLASS_NAME = "job base"
 
-    def __init__(self, controller, scheduler: Job_Scheduler, initial_delay, work_callable):
+    def __init__(
+        self,
+        controller: "aNyanController.Nyan_Controller",
+        scheduler: Job_Scheduler,
+        initial_delay: float,
+        work_callable: aNyanData.Call,
+    ):
 
         self._controller = controller
         self._scheduler = scheduler
@@ -615,7 +625,7 @@ class Schedulable_Job(object):
         self._currently_working = threading.Event()
         self._is_cancelled = threading.Event()
 
-    def __lt__(self, other):  # for the scheduler to do bisect.insort noice
+    def __lt__(self, other: "Schedulable_Job"):  # for the scheduler to do bisect.insort noice
 
         return self._next_work_time < other._next_work_time
 
@@ -625,7 +635,7 @@ class Schedulable_Job(object):
 
     def _boot_worker(self):
 
-        self._controller.CallToThread(self.Work)
+        self._controller.call_to_thread(self.work)
 
     def cancel(self):
 
@@ -633,7 +643,7 @@ class Schedulable_Job(object):
 
         self._scheduler.job_cancelled()
 
-    def currently_working(self):
+    def is_currently_working(self):
 
         return self._currently_working.is_set()
 
@@ -685,7 +695,7 @@ class Schedulable_Job(object):
 
         self._thread_slot_type = thread_type
 
-    def ShouldDelayOnWakeup(self, value):
+    def should_delay_on_wakeup(self, value):
 
         self._should_delay_on_wakeup = value
 
@@ -693,7 +703,7 @@ class Schedulable_Job(object):
 
         if self._thread_slot_type is not None:
 
-            if aNyanGlobals.controller.acquire_thread_slot(self._thread_slot_type):
+            if self._controller.can_acquire_thread_slot(self._thread_slot_type):
 
                 return True
 
@@ -727,7 +737,7 @@ class Schedulable_Job(object):
 
     def wake_on_pub_sub(self, topic):
 
-        aNyanGlobals.controller.sub(self, "PubSubWake", topic)
+        self._controller.sub(self, "PubSubWake", topic)
 
     def work(self):
 
@@ -735,7 +745,7 @@ class Schedulable_Job(object):
 
             if self._should_delay_on_wakeup:
 
-                while aNyanGlobals.controller.just_woke_from_sleep():
+                while self._controller.just_woke_from_sleep():
 
                     if is_thread_shutting_down():
 
@@ -751,7 +761,7 @@ class Schedulable_Job(object):
 
             if self._thread_slot_type is not None:
 
-                aNyanGlobals.controller.release_thread_slot(self._thread_slot_type)
+                self._controller.release_thread_slot(self._thread_slot_type)
 
             self._currently_working.clear()
 
@@ -760,7 +770,13 @@ class Single_Job(Schedulable_Job):
 
     PRETTY_CLASS_NAME = "single job"
 
-    def __init__(self, controller, scheduler: Job_Scheduler, initial_delay, work_callable):
+    def __init__(
+        self,
+        controller: "aNyanController.Nyan_Controller",
+        scheduler: Job_Scheduler,
+        initial_delay: float,
+        work_callable: aNyanData.Call,
+    ):
 
         Schedulable_Job.__init__(self, controller, scheduler, initial_delay, work_callable)
 
@@ -781,7 +797,14 @@ class Repeating_Job(Schedulable_Job):
 
     PRETTY_CLASS_NAME = "repeating job"
 
-    def __init__(self, controller, scheduler: Job_Scheduler, initial_delay, period, work_callable):
+    def __init__(
+        self,
+        controller: "aNyanController.Nyan_Controller",
+        scheduler: Job_Scheduler,
+        initial_delay: float,
+        period: float,
+        work_callable: aNyanData.Call,
+    ):
 
         Schedulable_Job.__init__(self, controller, scheduler, initial_delay, work_callable)
 

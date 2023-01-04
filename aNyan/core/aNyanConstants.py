@@ -1,13 +1,20 @@
+import datetime
 import time
 import sys
 import os
 
 # this is a useless commit to test gpg key
 
-START_TIME = time.time()
+START_TIME_PRECISE = time.perf_counter()
+START_TIME_FLOAT = time.time()
+START_TIME = int(START_TIME_FLOAT)
+
+START_TIME_DATE = datetime.datetime.now()
+START_TIME_PRETTY = datetime.datetime.strftime(START_TIME_DATE, "%Y-%m-%d %H:%M:%S")
 
 BRAND = "aNyan"
 
+SOFTWARE_VERSION = 1
 
 RUNNING_FROM_FROZEN_BUILD = getattr(sys, "frozen", False)
 

@@ -2,8 +2,9 @@ import time
 import sys
 import traceback
 import os
-import logging
-from typing import Union
+import json
+import threading
+from typing import Union, Callable
 
 try:
     import psutil
@@ -18,6 +19,9 @@ except ImportError:
 from . import aNyanExceptions
 from . import aNyanConstants
 from . import aNyanPaths
+from . import aNyanGlobals
+from . import aNyanLogging as logging
+
 
 
 def get_create_time():
@@ -141,7 +145,7 @@ def print_exception_tuple(etype, value, trace, do_wait=True):
 
     stack_list = traceback.format_stack()
 
-    stack = "".join(stack_list)
+    stack = "Stack:" + os.linesep + "".join(stack_list)
 
     message = str(etype.__name__) + ": " + str(value) + os.linesep + trace + os.linesep + stack
 
@@ -175,7 +179,7 @@ def record_running_start(db_path, instance):
 
         record_string += str(os.getpid())
         record_string += os.linesep
-        record_string += str(aNyanConstants.START_TIME)
+        record_string += str(aNyanConstants.START_TIME_PRECISE)
 
     aNyanPaths.make_sure_directory_exists(os.path.dirname(path))
 
@@ -322,8 +326,52 @@ def get_file_extension(path: str, do_not_include_dot: bool = False):
     return path[index + do_not_include_dot :]
 
 
+# TODO: just use a library for this, https://github.com/theskumar/python-dotenv
+def get_envvars(env_file=".env", set_environ=False, ignore_not_found_error=False):
+
+    env_vars = {}
+
+    if not os.path.isfile(env_file):
+
+        if not ignore_not_found_error:
+            raise FileNotFoundError(f"Could not find env file: {env_file}")
+
+        return env_vars
+
+    with open(env_file) as reader:
+
+        for line in reader:
+
+            line = line.strip()
+
+            if not line or line.startswith("#"):
+                continue
+
+            if line[0:7].lower() == "export ":
+
+                line = line[7:]
+
+            try:
+                (key, value) = line.split("=", 1)
+
+            except ValueError as e:
+                logging.debug(f"ValueErro while parsing .env file: {e}", stack_info=True)
+                continue
+
+            # removes quotes from string values
+            if value[0] in ("'", '"') and value[-1] in ("'", '"') and value[0] == value[-1] and len(value) > 1:
+                value = value[1:-1]
+
+            if set_environ and key:
+                os.environ[key] = value
+
+            env_vars[key] = value
+
+    return env_vars
+
+
 class Call(object):
-    def __init__(self, func, *args, **kwargs):
+    def __init__(self, func: Callable, *args, **kwargs):
 
         self._label = None
 
@@ -361,3 +409,73 @@ class Call(object):
     def SetLabel(self, label: str):
 
         self._label = label
+
+
+class Job_Database(object):
+    def __init__(self, job_type, synchronous, action, *args, **kwargs):
+
+        self._type = job_type
+        self._synchronous = synchronous
+        self._action = action
+        self._args = args
+        self._kwargs = kwargs
+
+        self._result_ready = threading.Event()
+
+    def __str__(self):
+
+        return "DB Job: {}".format(self.to_string())
+
+    def _do_delayed_result_relief(self):
+
+        pass
+
+    def get_callable_tuple(self):
+
+        return (self._action, self._args, self._kwargs)
+
+    def get_type(self):
+
+        return self._type
+
+    def is_synchronous(self):
+
+        return self._synchronous
+
+    def put_result(self, result):
+
+        self._result = result
+
+        self._result_ready.set()
+
+    def to_string(self):
+
+        return "{} {}".format(self._type, self._action)
+
+    def get_result(self):
+
+        time.sleep(0.00001)  # this one neat trick can save hassle on superquick jobs as event.wait can be laggy
+
+        while True:
+
+            result_was_ready = self._result_ready.wait(2)
+
+            if result_was_ready:
+
+                break
+
+            if aNyanGlobals.model_shutdown:
+
+                raise aNyanExceptions.Shutdown_Exception("Application quit before db could serve result!")
+
+            self._do_delayed_result_relief()
+
+        if isinstance(self._result, Exception):
+
+            e = self._result
+
+            raise e
+
+        else:
+
+            return self._result

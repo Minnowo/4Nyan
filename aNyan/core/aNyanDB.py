@@ -1,16 +1,19 @@
 import sqlite3
 import collections
-import logging
 import queue
 import os
 import time
 import traceback
+from typing import TYPE_CHECKING
 
 from . import aNyanGlobals
 from . import aNyanData
 from . import aNyanExceptions
 from . import aNyanPaths
-from . import aNyanController
+from . import aNyanLogging as logging
+
+if TYPE_CHECKING:
+    from . import aNyanController
 
 
 class Temporary_Integer_Table_Name_Cache(object):
@@ -222,7 +225,7 @@ class DB_Base(object):
 
             table_name_simple = table_name
 
-        statement = "{} {} ON {} ({});".format(create_phrase, index_name, table_name_simple, ", ".join(columns))
+        statement = f"{create_phrase} {index_name} ON {table_name_simple} ({', '.join(columns)});"
 
         self._execute(statement)
 
@@ -496,7 +499,10 @@ WAL_TRUNCATE_CHECKPOINT_PERIOD = 900
 
 
 class Nyan_DB(DB_Base):
-    def __init__(self, controller: aNyanController.Nyan_Controller, db_dir: str, db_name: str):
+
+    READ_WRITE_ACTIONS = ["service_info", "system_predicates", "missing_thumbnail_hashes"]
+
+    def __init__(self, controller: "aNyanController.Nyan_Controller", db_dir: str, db_name: str):
 
         DB_Base.__init__(self)
 
@@ -544,7 +550,7 @@ class Nyan_DB(DB_Base):
         self._ready_to_serve_requests = False
         self._could_not_initialise = False
 
-        self._jobs = queue.Queue()
+        self._jobs: queue.Queue[aNyanData.Job_Database] = queue.Queue()
 
         self._currently_doing_job = False
         self._current_status = ""
@@ -570,7 +576,7 @@ class Nyan_DB(DB_Base):
 
         self._close_db_connection()
 
-        self._controller.call_to_thread_long_running(self.MainLoop)
+        self._controller.call_to_thread_long_running(self.main_loop)
 
         while not self._ready_to_serve_requests:
 
@@ -608,6 +614,7 @@ class Nyan_DB(DB_Base):
 
         result = self._execute("SELECT 1 FROM sqlite_master WHERE type = ? AND name = ?;", ("table", "version")).fetchone()
 
+
         if create_db or result is None:
 
             self._is_first_start = True
@@ -632,7 +639,9 @@ class Nyan_DB(DB_Base):
 
             self._is_connected = True
 
-            self._cursor_transaction_wrapper = DB_Cursor_Transaction_Wrapper(self._c, aNyanGlobals.db_transaction_commit_period)
+            self._cursor_transaction_wrapper = DB_Cursor_Transaction_Wrapper(
+                self._cursor, aNyanGlobals.db_transaction_commit_period
+            )
 
             if aNyanGlobals.no_db_temp_files:
 
@@ -762,25 +771,6 @@ class Nyan_DB(DB_Base):
 
         self._unload_modules()
 
-    def _load_modules(self):
-        pass
-
-    def _unload_modules(self):
-
-        self._modules = []
-
-    def _create_db(self):
-
-        raise NotImplementedError()
-
-    def _init_external_databases(self):
-
-        pass
-
-    def _init_caches(self):
-
-        pass
-
     def _display_catastrophic_error(self, text):
 
         message = (
@@ -792,11 +782,11 @@ class Nyan_DB(DB_Base):
 
         logging.critical(message)
 
-    def _process_job(self, job):
+    def _process_job(self, job: aNyanData.Job_Database):
 
-        job_type = job.GetType()
+        job_type = job.get_type()
 
-        (action, args, kwargs) = job.GetCallableTuple()
+        (action, args, kwargs) = job.get_callable_tuple()
 
         try:
 
@@ -814,15 +804,15 @@ class Nyan_DB(DB_Base):
 
             if job_type in ("read", "read_write"):
 
-                result = self._Read(action, *args, **kwargs)
+                result = self._read(action, *args, **kwargs)
 
             elif job_type in ("write"):
 
-                result = self._Write(action, *args, **kwargs)
+                result = self._write(action, *args, **kwargs)
 
-            if job.IsSynchronous():
+            if job.is_synchronous():
 
-                job.PutResult(result)
+                job.put_result(result)
 
             self._cursor_transaction_wrapper.save()
 
@@ -834,7 +824,7 @@ class Nyan_DB(DB_Base):
 
                 self._cursor_transaction_wrapper.commit_and_begin()
 
-            self._DoAfterJobWork()
+            self._do_after_job_work()
 
         except Exception as e:
 
@@ -868,17 +858,137 @@ class Nyan_DB(DB_Base):
 
         self._cursor_transaction_wrapper.clean_pub_subs()
 
-    def _DoAfterJobWork(self):
+    def _do_after_job_work(self):
 
         self._cursor_transaction_wrapper.do_pub_subs()
 
+    def _generate_db_job(self, job_type, synchronous, action, *args, **kwargs):
+
+        return aNyanData.Job_Database(job_type, synchronous, action, *args, **kwargs)
+
+    def _unload_modules(self):
+
+        self._modules = []
+
+    def _load_modules(self):
+        pass
+
+    def _create_db(self):
+
+        raise NotImplementedError()
+
+    def _init_external_databases(self):
+
+        pass
+
+    def _init_caches(self):
+
+        pass
+
     def _manage_db_error(self, job, e):
+
+        raise NotImplementedError()
+
+    def _read(self, action, *args, **kwargs):
+
+        raise NotImplementedError()
+
+    def _write(self, action, *args, **kwargs):
 
         raise NotImplementedError()
 
     def publish_status_update(self):
 
         pass
+
+    def is_currently_doing_job(self):
+
+        return self._currently_doing_job
+
+    def get_approx_total_file_size(self):
+
+        total = 0
+
+        for filename in self._db_filenames.values():
+
+            path = os.path.join(self._db_dir, filename)
+
+            total += os.path.getsize(path)
+
+        return total
+
+    def get_status(self):
+
+        return (self._current_status, self._current_job_name)
+
+    def is_connected(self) -> bool:
+
+        return self._is_connected
+
+    def is_db_updated(self) -> bool:
+
+        return self._is_db_updated
+
+    def is_first_start(self) -> bool:
+
+        return self._is_first_start
+
+    def is_loop_finished(self) -> bool:
+
+        return self._loop_finished
+
+    def is_jobs_queue_empty(self) -> bool:
+
+        return self._jobs.empty()
+
+    def is_ready_to_serve_requests(self) -> bool:
+
+        return self._ready_to_serve_requests
+
+    def pause_and_disconnect(self, pause_and_disconnect: bool):
+
+        self._pause_and_disconnect = pause_and_disconnect
+
+    def shutdown(self):
+
+        self._local_shutdown = True
+
+    def read(self, action: str, *args, **kwargs):
+
+        if action in self.READ_WRITE_ACTIONS:
+
+            job_type = "read_write"
+
+        else:
+
+            job_type = "read"
+
+        synchronous = True
+
+        job = self._generate_db_job(job_type, synchronous, action, *args, **kwargs)
+
+        if aNyanGlobals.model_shutdown:
+
+            raise aNyanExceptions.Shutdown_Exception("Application has shut down!")
+
+        self._jobs.put(job)
+
+        return job.get_result()
+
+    def write(self, action, synchronous, *args, **kwargs):
+
+        job_type = "write"
+
+        job = self._generate_db_job(job_type, synchronous, action, *args, **kwargs)
+
+        if aNyanGlobals.model_shutdown:
+
+            raise aNyanExceptions.Shutdown_Exception("Application has shut down!")
+
+        self._jobs.put(job)
+
+        if synchronous:
+            return job.get_result()
 
     def main_loop(self):
 
@@ -908,7 +1018,7 @@ class Nyan_DB(DB_Base):
                 job = self._jobs.get(timeout=1)
 
                 self._currently_doing_job = True
-                self._current_job_name = job.ToString()
+                self._current_job_name = job.to_string()
 
                 self.publish_status_update()
 
@@ -916,23 +1026,9 @@ class Nyan_DB(DB_Base):
 
                     if aNyanGlobals.db_report_mode:
 
-                        summary = "Running db job: " + job.ToString()
+                        summary = "Running db job: " + job.to_string()
 
                         logging.info(summary)
-
-                    # if aNyanGlobals.profile_mode:
-
-                    #     summary = "Profiling db job: " + job.ToString()
-
-                    #     HydrusData.Profile(
-                    #         summary,
-                    #         "self._ProcessJob( job )",
-                    #         globals(),
-                    #         locals(),
-                    #         min_duration_ms=aNyanGlobals.db_profile_min_job_time_ms,
-                    #     )
-
-                    # else:
 
                     self._process_job(job)
 

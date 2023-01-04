@@ -1,12 +1,12 @@
 import os
 import tempfile
 import threading
-import logging
 from typing import Union
 
 from . import aNyanData
 from . import aNyanPaths
 from . import aNyanConstants
+from . import aNyanLogging as logging
 
 TEMP_PATH_LOCK = threading.Lock()
 IN_USE_TEMP_PATHS = set()

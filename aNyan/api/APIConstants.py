@@ -1,4 +1,9 @@
 import os
+import logging
+
+from ..core import aNyanData
+
+env: dict = aNyanData.get_envvars()
 
 MAX_USERNAME_LENGTH = 32
 MIN_USERNAME_LEGNTH = 4
@@ -26,10 +31,10 @@ VIDEO_STREAM_CHUNK_SIZE = MEGABYTE * 8
 IMAGE_UPLOAD_CHUNK_SIZE = KILOBYTE * 500
 
 
-STATIC_IMAGE_PATH = "."
-STATIC_THUMBNAIL_PATH = "."
-STATIC_VIDEO_PATH = "."
+STATIC_IMAGE_PATH = env.get("image_path", ".")
+STATIC_THUMBNAIL_PATH = env.get("thumb_path", ".")
+STATIC_VIDEO_PATH = env.get("video_path", ".")
 
 SERVER_PORT = 721
-SERVER_IP = "127.0.0.1"
+SERVER_IP = env.get("server_ip", "0.0.0.0")
 SERVER_ADDRESS = f"http://{SERVER_IP}:{SERVER_PORT}/"

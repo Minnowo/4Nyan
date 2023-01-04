@@ -35,7 +35,7 @@ def threading_test(controller=None):
             controller.init_model()
 
         # thred = aNyanThreading.Daemon_Worker(controller, "test-daemon-thread", useful_thread_callback, period=10)
-        thred = aNyanThreading.Threadcall_To_Thread(controller, "threadcall")
+        thred = aNyanThreading.Thread_Call_To_Thread(controller, "threadcall")
         thred.start()
 
         while True:
@@ -76,7 +76,7 @@ def test_pubsub(controller=None):
 
             print("Got notification:", *args, "on thread:", threading.current_thread().getName())
 
-    thread = aNyanThreading.Threadcall_To_Thread(None, "pubsub_process_call_to_thread")
+    thread = aNyanThreading.Thread_Call_To_Thread(None, "pubsub_process_call_to_thread")
     pubsub = aNyanPubSub.Nyan_PubSub()
 
     global is_shutting_down
@@ -155,7 +155,7 @@ def test_pubsub(controller=None):
 
 def main():
     aNyanGlobals.daemon_report_mode = True
-    aNyanLogging.setup_logger("./logs.log")
+    aNyanLogging.setup_logger(aNyanConstants.BRAND, "./logs.log")
 
     # controller = aNyanController.Nyan_Controller("./db")
     # controller.record_running_start()

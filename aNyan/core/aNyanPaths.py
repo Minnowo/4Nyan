@@ -1,11 +1,11 @@
 import os
-import logging
 import shutil
 import stat
 
 from . import aNyanData
 from . import aNyanConstants
 from . import aNyanGlobals
+from . import aNyanLogging as logging
 
 
 def make_sure_directory_exists(path: str):

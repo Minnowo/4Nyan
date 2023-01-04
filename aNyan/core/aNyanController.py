@@ -2,9 +2,9 @@ import threading
 import collections
 import random
 import time
-import logging
 import sys
 import os
+import traceback
 from typing import Callable
 
 from . import aNyanConstants
@@ -15,7 +15,8 @@ from . import aNyanExceptions
 from . import aNyanTemp
 from . import aNyanPaths
 from . import aNyanPubSub
-
+from . import aNyanDB
+from . import aNyanLogging as logging
 
 class Nyan_Controller(object):
     def __init__(self, db_dir):
@@ -29,26 +30,24 @@ class Nyan_Controller(object):
 
         self.db_dir: str = db_dir
 
-        self.db: bool = None
+        self.db: aNyanDB.Nyan_DB = None
 
-        pubsub_valid_callable: Callable = self._get_pubsub_valid_callable()
-
-        self._pubsub: aNyanPubSub.Nyan_PubSub = aNyanPubSub.Nyan_PubSub(self, pubsub_valid_callable)
-        self._daemon_jobs = {}
+        self._pubsub: aNyanPubSub.Nyan_PubSub = aNyanPubSub.Nyan_PubSub(self)
+        self._daemon_jobs: dict[str, aNyanThreading.Schedulable_Job] = {}
         self._caches = {}
         self._managers = {}
 
         self._fast_job_scheduler = None
         self._slow_job_scheduler = None
 
-        self._thread_slots = {}
+        self._thread_slots: dict[str, tuple[int, int]] = {}
 
         self._thread_slots["misc"] = (0, 10)
 
         self._thread_slot_lock = threading.Lock()
 
-        self._call_to_threads: list[aNyanThreading.Threadcall_To_Thread] = []
-        self._long_running_call_to_threads: list[aNyanThreading.Threadcall_To_Thread] = []
+        self._call_to_threads: list[aNyanThreading.Thread_Call_To_Thread] = []
+        self._long_running_call_to_threads: list[aNyanThreading.Thread_Call_To_Thread] = []
 
         self._thread_pool_busy_status_text = ""
         self._thread_pool_busy_status_text_new_check_time = 0
@@ -57,7 +56,7 @@ class Nyan_Controller(object):
 
         self._timestamps_lock = threading.Lock()
 
-        self._timestamps = collections.defaultdict(lambda: 0)
+        self._timestamps: collections.defaultdict[str, int] = collections.defaultdict(lambda: 0)
 
         self._timestamps["boot"] = aNyanData.time_now()
 
@@ -77,7 +76,7 @@ class Nyan_Controller(object):
 
             for call_to_thread in self._call_to_threads:
 
-                if not call_to_thread.CurrentlyWorking():
+                if not call_to_thread.is_currently_working():
 
                     return call_to_thread
 
@@ -87,7 +86,7 @@ class Nyan_Controller(object):
 
             if calling_from_the_thread_pool or len(self._call_to_threads) < 200:
 
-                call_to_thread = aNyanThreading.Threadcall_To_Thread(self, "CallToThread")
+                call_to_thread = aNyanThreading.Thread_Call_To_Thread(self, "CallToThread")
 
                 self._call_to_threads.append(call_to_thread)
 
@@ -109,17 +108,13 @@ class Nyan_Controller(object):
 
                     return call_to_thread
 
-            call_to_thread = aNyanThreading.Threadcall_To_Thread(self, "CallToThreadLongRunning")
+            call_to_thread = aNyanThreading.Thread_Call_To_Thread(self, "CallToThreadLongRunning")
 
             self._long_running_call_to_threads.append(call_to_thread)
 
             call_to_thread.start()
 
             return call_to_thread
-
-    def _get_pubsub_valid_callable(self):
-
-        return lambda o: True
 
     def _get_appropriate_job_scheduler(self, time_delta):
 
@@ -135,10 +130,6 @@ class Nyan_Controller(object):
 
         return 15
 
-    def _init_db(self):
-
-        raise NotImplementedError()
-
     def _init_temp_dir(self):
 
         self.temp_dir = aNyanTemp.get_temp_dir()
@@ -150,9 +141,9 @@ class Nyan_Controller(object):
 
         with self._call_to_thread_lock:
 
-            def filter_call_to_threads(t):
+            def filter_call_to_threads(t: aNyanThreading.Thread_Call_To_Thread):
 
-                if t.currently_working():
+                if t.is_currently_working():
 
                     return True
 
@@ -166,33 +157,27 @@ class Nyan_Controller(object):
 
             self._long_running_call_to_threads = list(filter(filter_call_to_threads, self._long_running_call_to_threads))
 
-    def _publish_shutdown_subtext(self, text):
+    def _read(self, action: str, *args, **kwargs):
 
-        pass
+        return self.db.read(action, *args, **kwargs)
 
-    def _read(self, action, *args, **kwargs):
+    def _write(self, action, synchronous, *args, **kwargs):
 
-        result = self.db.Read(action, *args, **kwargs)
-
-        return result
-
-    def _report_shutdown_daemons_status(self):
-
-        pass
+        return self.db.write(action, synchronous, *args, **kwargs)
 
     def _show_just_woke_to_user(self):
 
-        logging.info("Just woke from sleep.")
+        aNyanLogging.info("Just woke from sleep.")
 
     def _shutdown_daemons(self):
 
         for job in self._daemon_jobs.values():
 
-            job.Cancel()
+            job.cancel()
 
         started = aNyanData.time_now()
 
-        while True in (daemon_job.CurrentlyWorking() for daemon_job in self._daemon_jobs.values()):
+        while True in (daemon_job.is_currently_working() for daemon_job in self._daemon_jobs.values()):
 
             self._report_shutdown_daemons_status()
 
@@ -204,11 +189,17 @@ class Nyan_Controller(object):
 
         self._daemon_jobs = {}
 
-    def _write(self, action, synchronous, *args, **kwargs):
+    def _init_db(self):
 
-        result = self.db.Write(action, synchronous, *args, **kwargs)
+        raise NotImplementedError("You must override this this function!")
 
-        return result
+    def _publish_shutdown_subtext(self, text):
+
+        pass
+
+    def _report_shutdown_daemons_status(self):
+
+        pass
 
     def pub(self, topic: str, *args, **kwargs):
 
@@ -228,7 +219,7 @@ class Nyan_Controller(object):
 
         self._pubsub.sub(object, method_name, topic)
 
-    def acquire_thread_slot(self, thread_type):
+    def can_acquire_thread_slot(self, thread_type: str) -> bool:
 
         with self._thread_slot_lock:
 
@@ -248,7 +239,7 @@ class Nyan_Controller(object):
 
                 return False
 
-    def call_later(self, initial_delay, func, *args, **kwargs):
+    def call_later(self, initial_delay: float, func: Callable, *args, **kwargs) -> aNyanThreading.Single_Job:
 
         job_scheduler = self._get_appropriate_job_scheduler(initial_delay)
 
@@ -260,7 +251,9 @@ class Nyan_Controller(object):
 
         return job
 
-    def call_repeating(self, initial_delay, period, func, *args, **kwargs) -> aNyanThreading.Repeating_Job:
+    def call_repeating(
+        self, initial_delay: float, period: float, func: Callable, *args, **kwargs
+    ) -> aNyanThreading.Repeating_Job:
 
         job_scheduler = self._get_appropriate_job_scheduler(period)
 
@@ -272,7 +265,7 @@ class Nyan_Controller(object):
 
         return job
 
-    def call_to_thread(self, callable, *args, **kwargs):
+    def call_to_thread(self, callable: Callable, *args, **kwargs):
 
         if aNyanGlobals.callto_report_mode:
 
@@ -292,7 +285,7 @@ class Nyan_Controller(object):
 
         call_to_thread.put(callable, *args, **kwargs)
 
-    def call_to_thread_long_running(self, callable, *args, **kwargs):
+    def call_to_thread_long_running(self, callable: Callable, *args, **kwargs):
 
         if aNyanGlobals.callto_report_mode:
 
@@ -323,27 +316,47 @@ class Nyan_Controller(object):
         for cache in list(self._caches.values()):
             cache.Clear()
 
-    def currently_idle(self):
+    def is_currently_idle(self):
 
         return True
 
-    def currently_pub_subbing(self):
+    def is_currently_pub_subbing(self):
 
         return self._pubsub.work_to_do() or self._pubsub.doing_work()
 
-    def db_currently_doing_job(self):
+    def is_db_currently_doing_job(self):
 
-        if self.db is None:
+        return (self.db is not None) and self.db.is_currently_doing_job()
 
-            return False
-
-        else:
-
-            return self.db.CurrentlyDoingJob()
-
-    def doing_fast_exit(self) -> bool:
+    def is_doing_fast_exit(self) -> bool:
 
         return self._doing_fast_exit
+
+    def is_first_start(self):
+
+        return (self.db is not None) and self.db.is_first_start()
+
+    def is_good_time_to_start_background_work(self):
+
+        return self.is_currently_idle() and not (self.just_woke_from_sleep() or self.is_system_busy())
+
+    def is_good_time_to_start_foreground_work(self):
+
+        return not self.just_woke_from_sleep()
+
+    def is_system_busy(self):
+
+        return self._system_busy
+
+    def last_shutdown_was_bad(self):
+
+        return self._last_shutdown_was_bad
+
+    def just_woke_from_sleep(self):
+
+        self.sleep_check()
+
+        return self._just_woke_from_sleep
 
     def get_boot_time(self):
 
@@ -355,7 +368,7 @@ class Nyan_Controller(object):
 
     def get_db_status(self):
 
-        return self.db.GetStatus()
+        return self.db.get_status()
 
     def get_cache(self, name):
 
@@ -383,7 +396,7 @@ class Nyan_Controller(object):
 
             with self._call_to_thread_lock:
 
-                num_threads = sum((1 for t in self._call_to_threads if t.CurrentlyWorking()))
+                num_threads = sum(1 for t in self._call_to_threads if t.is_currently_working())
 
             if num_threads < 4:
 
@@ -417,25 +430,11 @@ class Nyan_Controller(object):
 
         return threads
 
-    def get_timestamp(self, name: str) -> str:
+    def get_timestamp(self, name: str) -> int:
 
         with self._timestamps_lock:
 
             return self._timestamps[name]
-
-    def good_time_to_start_background_work(self):
-
-        return self.currently_idle() and not (self.just_woke_from_sleep() or self.system_busy())
-
-    def good_time_to_start_foreground_work(self):
-
-        return not self.just_woke_from_sleep()
-
-    def just_woke_from_sleep(self):
-
-        self.sleep_check()
-
-        return self._just_woke_from_sleep
 
     def init_model(self):
         try:
@@ -452,50 +451,31 @@ class Nyan_Controller(object):
         self._fast_job_scheduler.start()
         self._slow_job_scheduler.start()
 
-        # self.db = self._init_db()
+        self.db = self._init_db()
 
     def init_view(self):
-        pass
-        # job = self.CallRepeating(60.0, 300.0, self.MaintainDB, maintenance_mode=HC.MAINTENANCE_IDLE)
 
-        # job.WakeOnPubSub("wake_idle_workers")
-        # job.ShouldDelayOnWakeup(True)
+        job = self.call_repeating(60.0, 300.0, self.maintain_db, maintenance_mode=aNyanConstants.MAINTENANCE_IDLE)
+        job.wake_on_pub_sub("wake_idle_workers")
+        job.should_delay_on_wakeup(True)
+        self._daemon_jobs["maintain_db"] = job
 
-        # self._daemon_jobs["maintain_db"] = job
+        job = self.call_repeating(0.0, 15.0, self.sleep_check)
+        self._daemon_jobs["sleep_check"] = job
 
-        # job = self.CallRepeating(0.0, 15.0, self.SleepCheck)
+        job = self.call_repeating(10.0, 60.0, self.maintain_memory_fast)
+        self._daemon_jobs["maintain_memory_fast"] = job
 
-        # self._daemon_jobs["sleep_check"] = job
-
-        # job = self.CallRepeating(10.0, 60.0, self.MaintainMemoryFast)
-
-        # self._daemon_jobs["maintain_memory_fast"] = job
-
-        # job = self.CallRepeating(10.0, 300.0, self.MaintainMemorySlow)
-
-        # self._daemon_jobs["maintain_memory_slow"] = job
+        job = self.call_repeating(10.0, 300.0, self.maintain_memory_slow)
+        self._daemon_jobs["maintain_memory_slow"] = job
 
         # upnp_services = self._GetUPnPServices()
 
         # self.services_upnp_manager = HydrusNATPunch.ServicesUPnPManager(upnp_services)
 
-        # job = self.CallRepeating(10.0, 43200.0, self.services_upnp_manager.RefreshUPnP)
+        # job = self.call_repeating(10.0, 43200.0, self.services_upnp_manager.RefreshUPnP)
 
         # self._daemon_jobs["services_upnp"] = job
-
-    def is_first_start(self):
-
-        if self.db is None:
-
-            return False
-
-        else:
-
-            return self.db.IsFirstStart()
-
-    def last_shutdown_was_bad(self):
-
-        return self._last_shutdown_was_bad
 
     def maintain_db(self, maintenance_mode=aNyanConstants.MAINTENANCE_IDLE, stop_time=None):
 
@@ -517,7 +497,7 @@ class Nyan_Controller(object):
 
         self._maintain_call_to_threads()
 
-    def print_profile(self, summary, profile_text=None):
+    def print_profile(self, summary: str, profile_text: str = None):
 
         pretty_timestamp = time.strftime("%Y-%m-%d %H-%M-%S", time.localtime(aNyanGlobals.profile_start_time))
 
@@ -536,44 +516,7 @@ class Nyan_Controller(object):
                 f.write("\n\n")
                 f.write(profile_text)
 
-    def print_query_plan(self, query, plan_lines):
-        pass
-        # if query in HG.queries_planned:
-
-        #     return
-
-        # HG.queries_planned.add(query)
-
-        # pretty_timestamp = time.strftime("%Y-%m-%d %H-%M-%S", time.localtime(HG.query_planner_start_time))
-
-        # query_planner_log_filename = "{} query planner - {}.log".format(self._name, pretty_timestamp)
-
-        # query_planner_log_path = os.path.join(self.db_dir, query_planner_log_filename)
-
-        # with open(query_planner_log_path, "a", encoding="utf-8") as f:
-
-        #     prefix = time.strftime("%Y/%m/%d %H:%M:%S: ")
-
-        #     if " " in query:
-
-        #         first_word = query.split(" ", 1)[0]
-
-        #     else:
-
-        #         first_word = "unknown"
-
-        #     f.write(prefix + first_word)
-        #     f.write("\n")
-        #     f.write(query)
-
-        #     if len(plan_lines) > 0:
-
-        #         f.write("\n")
-        #         f.write("\n" "".join((str(p) for p in plan_lines)))
-
-        #     f.write("\n\n")
-
-    def read(self, action, *args, **kwargs):
+    def read(self, action: str, *args, **kwargs):
 
         return self._read(action, *args, **kwargs)
 
@@ -585,7 +528,7 @@ class Nyan_Controller(object):
 
         aNyanData.record_running_start(self.db_dir, self._name)
 
-    def release_thread_slot(self, thread_type):
+    def release_thread_slot(self, thread_type: str):
 
         with self._thread_slot_lock:
 
@@ -619,25 +562,19 @@ class Nyan_Controller(object):
 
             self._timestamps[name] = value
 
-    def should_stop_this_work(self, maintenance_mode, stop_time=None):
+    def should_stop_this_work(self, maintenance_mode: int, stop_time=None):
 
         if maintenance_mode == aNyanConstants.MAINTENANCE_IDLE:
 
-            if not self.currently_idle():
+            return not self.is_currently_idle()
 
-                return True
+        if maintenance_mode == aNyanConstants.MAINTENANCE_SHUTDOWN:
 
-        elif maintenance_mode == aNyanConstants.MAINTENANCE_SHUTDOWN:
-
-            if not aNyanGlobals.do_idle_shutdown_work:
-
-                return True
+            return not aNyanGlobals.do_idle_shutdown_work
 
         if stop_time is not None:
 
-            if aNyanData.time_has_passed(stop_time):
-
-                return True
+            return aNyanData.time_has_passed(stop_time)
 
         return False
 
@@ -645,9 +582,9 @@ class Nyan_Controller(object):
 
         if self.db is not None:
 
-            self.db.Shutdown()
+            self.db.shutdown()
 
-            while not self.db.LoopIsFinished():
+            while not self.db.is_loop_finished():
 
                 self._publish_shutdown_subtext("waiting for db to finish up\u2026")
 
@@ -726,10 +663,6 @@ class Nyan_Controller(object):
 
         self.sleep_check()
 
-    def system_busy(self):
-
-        return self._system_busy
-
     def touch_timestamp(self, name: str):
 
         with self._timestamps_lock:
@@ -744,7 +677,7 @@ class Nyan_Controller(object):
 
                 raise aNyanExceptions.Shutdown_Exception("Application shutting down!")
 
-            elif self.db.JobsQueueEmpty() and not self.db.CurrentlyDoingJob():
+            elif self.db.is_jobs_queue_empty() and not self.db.is_currently_doing_job():
 
                 return
 
@@ -760,7 +693,7 @@ class Nyan_Controller(object):
 
     def wait_until_pub_subs_empty(self):
 
-        while self.currently_pub_subbing():
+        while self.is_currently_pub_subbing():
 
             if aNyanGlobals.model_shutdown:
 
@@ -774,12 +707,90 @@ class Nyan_Controller(object):
 
         if name in self._daemon_jobs:
 
-            self._daemon_jobs[name].Wake()
+            self._daemon_jobs[name].wake()
 
-    def write(self, action, *args, **kwargs):
+    def write(self, action: str, *args, **kwargs):
 
         return self._write(action, False, *args, **kwargs)
 
-    def write_synchronous(self, action, *args, **kwargs):
+    def write_synchronous(self, action: str, *args, **kwargs):
 
         return self._write(action, True, *args, **kwargs)
+
+    def boot_everything_base(self):
+
+        # try:
+
+        #     self.CheckAlreadyRunning()
+
+        # except aNyanExceptions.Shutdown_Exception:
+
+        #     logging.warning("Already running this controller instance!")
+        #     return
+
+        try:
+
+            self.record_running_start()
+
+            self.init_model()
+
+            self.init_view()
+
+            self._is_booted = True
+
+        except (aNyanExceptions.DB_Credentials_Exception, aNyanExceptions.Shutdown_Exception) as e:
+
+            logging.error(e)
+
+            self.clean_running_file()
+
+        except Exception as e:
+
+            trace = traceback.format_exc()
+
+            text = (
+                "If the db crashed, another error may be written just above ^."
+                + os.linesep
+                + "A serious error occurred while trying to start the program. "
+                + "The error will be shown next in a window. "
+                + "More information may have been written to client.log."
+                + os.linesep * 2
+                + trace
+            )
+
+            logging.error(text)
+
+            if "malformed" in trace:
+
+                hell_message = (
+                    "Looking at it, it looks like your database may be malformed! "
+                    + "This is a serious error. "
+                    + 'Please check "/install_dir/db/help my db is broke.txt" as soon as you can for the next steps. '
+                    + "The specific error will now follow."
+                )
+
+                logging.error(hell_message)
+
+    def exit_everything_base(self):
+
+        try:
+
+            aNyanGlobals.started_shutdown = True
+
+            self.shutdown_view()
+
+            self.shutdown_model()
+
+            self.clean_running_file()
+
+        except (aNyanExceptions.DB_Credentials_Exception, aNyanExceptions.Shutdown_Exception):
+
+            pass
+
+        except Exception as e:
+
+            aNyanData.print_exception(e)
+
+        finally:
+
+            self._program_is_shut_down = True

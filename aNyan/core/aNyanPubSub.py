@@ -1,15 +1,16 @@
 import threading
 import weakref
-import logging
-from typing import Callable
+
+from typing import Union, Callable
 
 from . import aNyanData
 from . import aNyanExceptions
 from . import aNyanGlobals
+from . import aNyanLogging as logging
 
 
 class Nyan_PubSub(object):
-    def __init__(self, valid_callable: Callable = None):
+    def __init__(self, valid_callable: Union[Callable, aNyanData.Call] = None):
 
         if valid_callable is None:
 

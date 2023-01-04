@@ -21,14 +21,23 @@ from . import APIAuth
 from . import APIFiles
 from . import APIGlobals
 
-from ..core import aNyanData
-from ..core import aNyanConstants
+from ..core import (aNyanData, aNyanConstants,
+aNyanController,aNyanDB,aNyanExceptions,aNyanGlobals,aNyanLogging,aNyanPaths,aNyanPubSub,aNyanTemp,aNyanThreading)
 
 
-class Default_Routing(APIRouter):
-    def __init__(self):
+class Routing(APIRouter):
 
+    def __init__(self, controller: aNyanController.Nyan_Controller) -> None:
+        
         APIRouter.__init__(self)
+        
+        self.controller = controller
+
+
+class Default_Routing(Routing):
+    def __init__(self, controller: aNyanController.Nyan_Controller):
+
+        Routing.__init__(self, controller)
 
         self.add_api_route("/heartbeat", self.heartbeat, methods=["GET", "HEAD"])
         self.add_api_route("/", self.heartbeat, methods=["GET", "HEAD"])
@@ -38,10 +47,10 @@ class Default_Routing(APIRouter):
         return {"nyaa~": "OwO", "-w-": "^w^", ";3c": "OwU"}
 
 
-class Search_Routing(APIRouter):
-    def __init__(self):
+class Search_Routing(Routing):
+    def __init__(self, controller: aNyanController.Nyan_Controller):
 
-        APIRouter.__init__(self)
+        Routing.__init__(self, controller)
 
         self.add_api_route("/search/get_file_tags", self.search_tags, methods=["GET"])
         self.add_api_route("/search/get_categories", self.search_categories, methods=["GET"])
@@ -97,10 +106,10 @@ class Search_Routing(APIRouter):
         raise APIExceptions.API_404_USER_NOT_FOUND_EXCEPTION
 
 
-class Static_Routing(APIRouter):
-    def __init__(self):
+class Static_Routing(Routing):
+    def __init__(self, controller: aNyanController.Nyan_Controller):
 
-        APIRouter.__init__(self)
+        Routing.__init__(self, controller)
 
         self.add_api_route("/static/{category}/{path}", self.staticv1, methods=["HEAD", "GET"])
         self.add_api_route("/favicon.ico", self.favicon, methods=["HEAD", "GET"])
@@ -126,10 +135,10 @@ class Static_Routing(APIRouter):
             return callback(request, path)
 
 
-class Auth_Routing(APIRouter):
-    def __init__(self):
+class Auth_Routing(Routing):
+    def __init__(self, controller: aNyanController.Nyan_Controller):
 
-        APIRouter.__init__(self)
+        Routing.__init__(self, controller)
 
         self.add_api_route("/create/user", self.register_user, methods=["POST"])
         self.add_api_route("/auth/token", self.login, methods=["POST"])
