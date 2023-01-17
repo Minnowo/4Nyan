@@ -1,12 +1,12 @@
 import logging
 
-from .api import APIConstants, APIRouting, APIFastAPI
+from .api import APIConstants, APIFastAPI
+from .api.services import ServiceYoutTubePlaylistDL, ServiceFiles, ServiceTest
 
 from .core import aNyanLogging, aNyanDB, aNyanController, aNyanData, aNyanConstants
 
 
 class DB(aNyanDB.Nyan_DB):
-
     def __init__(self, controller, db_dir, db_name):
 
         aNyanDB.Nyan_DB.__init__(self, controller, db_dir, db_name)
@@ -22,7 +22,9 @@ class DB(aNyanDB.Nyan_DB):
 
         # intentionally not IF NOT EXISTS here, to catch double-creation accidents early and on a good table
         self._execute("CREATE TABLE version ( version INTEGER );")
-        self._execute("CREATE TABLE IF NOT EXISTS options ( options TEXT_YAML );",)
+        self._execute(
+            "CREATE TABLE IF NOT EXISTS options ( options TEXT_YAML );",
+        )
         self._execute("INSERT INTO version ( version ) VALUES ( ? );", (aNyanConstants.SOFTWARE_VERSION,))
 
     def _init_external_databases(self):
@@ -59,7 +61,7 @@ class Controller(aNyanController.Nyan_Controller):
 
 def __real_main():
     import uvicorn
-    
+
     # uvicorn_error = logging.getLogger("uvicorn.error")
     # uvicorn_error.disabled = True
     # uvicorn_access = logging.getLogger("uvicorn.access")
@@ -73,25 +75,27 @@ def __real_main():
         controller.boot_everything_base()
 
         app = APIFastAPI.Nyan_API()
-        app.include_router(APIRouting.Search_Routing(controller))
-        app.include_router(APIRouting.Static_Routing(controller))
+        app.include_router(ServiceFiles.File_Service(controller))
+        app.include_router(ServiceYoutTubePlaylistDL.Youtube_Playlist_DL_Service(controller))
+        app.include_router(ServiceTest.Test_Service(controller))
+        # app.include_router(APIRouting.Search_Routing(controller))
+        # app.include_router(APIRouting.Static_Routing(controller))
 
         uvicorn.run(app, host=APIConstants.SERVER_IP, port=APIConstants.SERVER_PORT)
 
     except KeyboardInterrupt:
-        pass 
+        pass
 
     except Exception as e:
-        aNyanData.print_exception(e)
+        aNyanData.print_exception(e, True)
 
     finally:
 
         controller.exit_everything_base()
 
 
-
 def main():
 
-    aNyanLogging.setup_and_show_startup_message(log_file="./logs.log")
+    aNyanLogging.setup_and_show_startup_message(log_file="./logs.log", log_level=logging.INFO)
 
     __real_main()

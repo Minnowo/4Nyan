@@ -606,7 +606,7 @@ class Schedulable_Job(object):
         self,
         controller: "aNyanController.Nyan_Controller",
         scheduler: Job_Scheduler,
-        initial_delay: float,
+        initial_delay_seconds: float,
         work_callable: aNyanData.Call,
     ):
 
@@ -616,7 +616,7 @@ class Schedulable_Job(object):
 
         self._should_delay_on_wakeup = False
 
-        self._next_work_time = aNyanData.time_now_float() + initial_delay
+        self._next_work_time = aNyanData.time_now_float() + initial_delay_seconds
 
         self._thread_slot_type = None
 
@@ -774,11 +774,11 @@ class Single_Job(Schedulable_Job):
         self,
         controller: "aNyanController.Nyan_Controller",
         scheduler: Job_Scheduler,
-        initial_delay: float,
+        initial_delay_seconds: float,
         work_callable: aNyanData.Call,
     ):
 
-        Schedulable_Job.__init__(self, controller, scheduler, initial_delay, work_callable)
+        Schedulable_Job.__init__(self, controller, scheduler, initial_delay_seconds, work_callable)
 
         self._work_complete = threading.Event()
 

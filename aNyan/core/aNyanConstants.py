@@ -6,7 +6,8 @@ import os
 # this is a useless commit to test gpg key
 
 START_TIME_PRECISE = time.perf_counter()
-START_TIME_FLOAT = time.time()
+# ha, subtracting here makes it suuuper close the psutil.create_time()
+START_TIME_FLOAT = time.time() - START_TIME_PRECISE
 START_TIME = int(START_TIME_FLOAT)
 
 START_TIME_DATE = datetime.datetime.now()

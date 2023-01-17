@@ -1,5 +1,4 @@
 import os
-import logging
 
 from ..core import aNyanData
 
@@ -38,3 +37,9 @@ STATIC_VIDEO_PATH = env.get("video_path", ".")
 SERVER_PORT = 721
 SERVER_IP = env.get("server_ip", "0.0.0.0")
 SERVER_ADDRESS = f"http://{SERVER_IP}:{SERVER_PORT}/"
+
+
+import re
+
+# used to match the range header in requests, only grabs the starting bytes value
+RANGE_HEADER = re.compile(r"bytes=(?P<min>[0-9]+)\-(?P<max>[0-9]+)?", flags=re.IGNORECASE)

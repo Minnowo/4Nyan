@@ -35,31 +35,31 @@ class Nyan_PubSub(object):
 
         callable_tuples = []
 
-        if topic in self._topics_to_objects:
+        if topic not in self._topics_to_objects:
+            return callable_tuples
 
-            try:
+        try:
 
-                objects = self._topics_to_objects[topic]
+            objects = self._topics_to_objects[topic]
 
-                for obj in objects:
+            for obj in objects:
 
-                    if obj is None or not self._valid_callable(obj):
+                if obj is None or not self._valid_callable(obj):
+                    continue
 
-                        continue
+                method_names = self._topics_to_method_names[topic]
 
-                    method_names = self._topics_to_method_names[topic]
+                for method_name in method_names:
 
-                    for method_name in method_names:
+                    if hasattr(obj, method_name):
 
-                        if hasattr(obj, method_name):
+                        callable = getattr(obj, method_name)
 
-                            callable = getattr(obj, method_name)
+                        callable_tuples.append((obj, callable))
 
-                            callable_tuples.append((obj, callable))
+        except Exception as e:
 
-            except:
-
-                pass
+            logging.error("", e, stack_info=True)
 
         return callable_tuples
 
@@ -95,7 +95,6 @@ class Nyan_PubSub(object):
             for (topic, args, kwargs) in pubsubs:
 
                 try:
-
                     # do all this _outside_ the lock, lol
 
                     callable_tuples = self._get_callable_tuples(topic)
@@ -106,27 +105,6 @@ class Nyan_PubSub(object):
                     if aNyanGlobals.pubsub_report_mode and not_a_report:
 
                         logging.info((topic, args, kwargs, callable_tuples))
-
-                    # if aNyanGlobals.profile_mode and not_a_report:
-                    #     summary = "Profiling pubsub: {}".format(topic)
-
-                    #     for (obj, callable) in callable_tuples:
-
-                    #         try:
-
-                    #             aNyanData.profile(
-                    #                 summary,
-                    #                 "callable( *args, **kwargs )",
-                    #                 globals(),
-                    #                 locals(),
-                    #                 min_duration_ms=aNyanGlobals.pubsub_profile_min_job_time_ms,
-                    #             )
-
-                    #         except aNyanExceptions.Shutdown_Exception:
-
-                    #             return False
-
-                    # else:
 
                     for (obj, callable) in callable_tuples:
 

@@ -18,6 +18,7 @@ from . import aNyanPubSub
 from . import aNyanDB
 from . import aNyanLogging as logging
 
+
 class Nyan_Controller(object):
     def __init__(self, db_dir):
 
@@ -32,7 +33,7 @@ class Nyan_Controller(object):
 
         self.db: aNyanDB.Nyan_DB = None
 
-        self._pubsub: aNyanPubSub.Nyan_PubSub = aNyanPubSub.Nyan_PubSub(self)
+        self._pubsub: aNyanPubSub.Nyan_PubSub = aNyanPubSub.Nyan_PubSub()
         self._daemon_jobs: dict[str, aNyanThreading.Schedulable_Job] = {}
         self._caches = {}
         self._managers = {}
@@ -104,7 +105,7 @@ class Nyan_Controller(object):
 
             for call_to_thread in self._long_running_call_to_threads:
 
-                if not call_to_thread.CurrentlyWorking():
+                if not call_to_thread.is_currently_working():
 
                     return call_to_thread
 
@@ -167,7 +168,7 @@ class Nyan_Controller(object):
 
     def _show_just_woke_to_user(self):
 
-        aNyanLogging.info("Just woke from sleep.")
+        logging.info("Just woke from sleep.")
 
     def _shutdown_daemons(self):
 
@@ -239,27 +240,27 @@ class Nyan_Controller(object):
 
                 return False
 
-    def call_later(self, initial_delay: float, func: Callable, *args, **kwargs) -> aNyanThreading.Single_Job:
+    def call_later(self, initial_delay_seconds: float, func: Callable, *args, **kwargs) -> aNyanThreading.Single_Job:
 
-        job_scheduler = self._get_appropriate_job_scheduler(initial_delay)
+        job_scheduler = self._get_appropriate_job_scheduler(initial_delay_seconds)
 
         call = aNyanData.Call(func, *args, **kwargs)
 
-        job = aNyanThreading.Single_Job(self, job_scheduler, initial_delay, call)
+        job = aNyanThreading.Single_Job(self, job_scheduler, initial_delay_seconds, call)
 
         job_scheduler.add_job(job)
 
         return job
 
     def call_repeating(
-        self, initial_delay: float, period: float, func: Callable, *args, **kwargs
+        self, initial_delay_seconds: float, period: float, func: Callable, *args, **kwargs
     ) -> aNyanThreading.Repeating_Job:
 
         job_scheduler = self._get_appropriate_job_scheduler(period)
 
         call = aNyanData.Call(func, *args, **kwargs)
 
-        job = aNyanThreading.Repeating_Job(self, job_scheduler, initial_delay, period, call)
+        job = aNyanThreading.Repeating_Job(self, job_scheduler, initial_delay_seconds, period, call)
 
         job_scheduler.add_job(job)
 
@@ -453,6 +454,24 @@ class Nyan_Controller(object):
 
         self.db = self._init_db()
 
+    def daemon_pubsub(self):
+
+        while not aNyanGlobals.model_shutdown:
+
+            if self._pubsub.work_to_do():
+
+                try:
+
+                    self._pubsub.process()
+
+                except Exception as e:
+
+                    aNyanData.print_exception(e)
+
+            else:
+
+                self._pubsub.wait_on_pub()
+
     def init_view(self):
 
         job = self.call_repeating(60.0, 300.0, self.maintain_db, maintenance_mode=aNyanConstants.MAINTENANCE_IDLE)
@@ -469,6 +488,7 @@ class Nyan_Controller(object):
         job = self.call_repeating(10.0, 300.0, self.maintain_memory_slow)
         self._daemon_jobs["maintain_memory_slow"] = job
 
+        self.call_to_thread_long_running(self.daemon_pubsub)
         # upnp_services = self._GetUPnPServices()
 
         # self.services_upnp_manager = HydrusNATPunch.ServicesUPnPManager(upnp_services)

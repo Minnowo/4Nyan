@@ -7,11 +7,12 @@ from . import aNyanConstants
 LOGGER_INSTANCE = logging.getLogger(aNyanConstants.BRAND)
 
 debug = LOGGER_INSTANCE.debug
-info = LOGGER_INSTANCE.info 
+info = LOGGER_INSTANCE.info
 warning = LOGGER_INSTANCE.warning
 warn = LOGGER_INSTANCE.warn
 error = LOGGER_INSTANCE.error
 critical = LOGGER_INSTANCE.critical
+
 
 def create_setup_logger(name: str = None, log_file: str = "", log_level=logging.DEBUG):
 
@@ -42,7 +43,8 @@ def setup_logger(log_file: str = "", log_level=logging.DEBUG):
 
     create_setup_logger(aNyanConstants.BRAND, log_file, log_level)
 
-def show_startup_message(message: str=None):
+
+def show_startup_message(message: str = None):
 
     LOGGER_INSTANCE.info("~[__^w^_  <3  <3")
     LOGGER_INSTANCE.info(f"4Nyan starting. Time: {aNyanConstants.START_TIME_PRETTY}")
@@ -50,7 +52,8 @@ def show_startup_message(message: str=None):
     if message:
         LOGGER_INSTANCE.info(message)
 
-def setup_and_show_startup_message(message: str=None, log_file: str = "", log_level=logging.DEBUG):
+
+def setup_and_show_startup_message(message: str = None, log_file: str = "", log_level=logging.DEBUG):
 
     setup_logger(log_file, log_level)
     show_startup_message(message)

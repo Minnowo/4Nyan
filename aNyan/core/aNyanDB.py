@@ -614,7 +614,6 @@ class Nyan_DB(DB_Base):
 
         result = self._execute("SELECT 1 FROM sqlite_master WHERE type = ? AND name = ?;", ("table", "version")).fetchone()
 
-
         if create_db or result is None:
 
             self._is_first_start = True

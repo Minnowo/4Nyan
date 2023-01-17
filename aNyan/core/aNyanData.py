@@ -23,7 +23,6 @@ from . import aNyanGlobals
 from . import aNyanLogging as logging
 
 
-
 def get_create_time():
 
     if PSUTIL_OK:
@@ -40,7 +39,7 @@ def get_create_time():
     return aNyanConstants.START_TIME
 
 
-def getUptime():
+def get_up_time():
 
     return time.time() - get_create_time()
 
@@ -114,6 +113,11 @@ def time_delta_until_time_precise(t):
     return max(time_remaining, 0.0)
 
 
+def hours_to_seconds(time_hours: float):
+
+    return time_hours * 60 * 60
+
+
 def print_exception(e, do_wait=True):
 
     (etype, value, traceback) = sys.exc_info()
@@ -167,19 +171,13 @@ def record_running_start(db_path, instance):
 
             me = psutil.Process()
 
-            record_string += str(me.pid)
-            record_string += os.linesep
-            record_string += str(me.create_time())
+            record_string += f"[psutil]{os.linesep}{me.pid}{os.linesep}{me.create_time()}{os.linesep}"
 
         except psutil.Error:
 
             return
 
-    else:
-
-        record_string += str(os.getpid())
-        record_string += os.linesep
-        record_string += str(aNyanConstants.START_TIME_PRECISE)
+    record_string += f"[os]{os.linesep}{os.getpid()}{os.linesep}{aNyanConstants.START_TIME_FLOAT}"
 
     aNyanPaths.make_sure_directory_exists(os.path.dirname(path))
 

@@ -3,13 +3,7 @@ import logging
 
 from fastapi import (
     FastAPI,
-    HTTPException,
-    Request,
-    Depends,
-    File,
-    UploadFile,
-    Query,
-    Body,
+    APIRouter,
 )
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.gzip import GZipMiddleware
@@ -18,6 +12,9 @@ from fastapi.responses import FileResponse
 
 from typing import List
 from typing import Optional, Union
+
+
+from ..core import aNyanController, aNyanLogging as logging, aNyanData
 
 
 class Nyan_API(FastAPI):
@@ -39,3 +36,20 @@ class Nyan_API(FastAPI):
             allow_methods=["*"],
             allow_headers=["*"],
         )
+
+
+class Nyan_Router(APIRouter):
+    def __init__(self, name: str, controller: aNyanController.Nyan_Controller) -> None:
+
+        APIRouter.__init__(self)
+
+        self.name_unique = f"{name} created at {aNyanData.time_now()}"
+
+        self.name = name
+
+        self.controller = controller
+
+        logging.info(f"Creating APIRouter with name: {name}")
+
+    def __hash__(self) -> int:
+        return self.name_unique.__hash__()
