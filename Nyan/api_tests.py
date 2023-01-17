@@ -4,9 +4,9 @@ from requests.exceptions import Timeout
 import base64
 from urllib.parse import urlencode, parse_qsl
 
-from core import aNyanData
+from core import NyanData
 
-env: dict = aNyanData.get_envvars()
+env: dict = NyanData.get_envvars()
 
 SERVER_PORT = 721
 SERVER_IP = env.get("server_ip", "0.0.0.0")
@@ -101,11 +101,24 @@ def get_cancel_test_jobs():
     fetch_raw(url, "get")
 
 
+def get_stream_video():
+    url = f"{SERVER_ADDRESS}svc/v/nyahuwu"
+    fetch_raw(url, "get")
+
+
+def set_api_shutdown_flag():
+
+    url = f"{SERVER_ADDRESS}tst/set_api_shutdown_flag/"
+
+    fetch_raw(url, "get")
+
+
 import time
 
+# get_stream_video()
+# set_api_shutdown_flag()
 print(get_yt_playlist(encode_b64=True, playlist_id=["PLD4r6M35XTXPeC3vhz6w34_5ndzp0R2q4"]))
 get_test_single_job("hello world")
-get_test_repeating_job("Nyah OWO")
+# get_test_repeating_job("Nyah OWO")
 
-time.sleep(62)
-get_cancel_test_jobs()
+# get_cancel_test_jobs()

@@ -81,3 +81,23 @@ class DB_Credentials_Exception(Nyan_Exception):
 
     Raised when bad credentials are used to access the database
     """
+
+
+class Cache_Exception(Nyan_Exception):
+    """
+    Cache Base Exception
+    """
+
+class Cache_Lookup_Exception(Nyan_Exception):
+    """
+    Cache Lookup Exception
+
+    Raised when a cache lookup has no data
+    """
+
+class Cache_Expired_Exception(Nyan_Exception):
+    """
+    Cache Expired Exception
+
+    Raised when trying to access expired data from a cache
+    """

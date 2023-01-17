@@ -3,7 +3,7 @@ import os
 
 from . import APIExceptions
 
-from ..core import aNyanLogging as logging
+from ..core import NyanLogging as logging
 
 
 HAS_VALID_CHARACTERS = re.compile(r"^[a-zA-Z0-9\-\_\.\(\)\[\]\,]+", flags=re.IGNORECASE)

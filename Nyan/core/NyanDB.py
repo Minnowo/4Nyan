@@ -6,14 +6,14 @@ import time
 import traceback
 from typing import TYPE_CHECKING
 
-from . import aNyanGlobals
-from . import aNyanData
-from . import aNyanExceptions
-from . import aNyanPaths
-from . import aNyanLogging as logging
+from . import NyanGlobals
+from . import NyanData
+from . import NyanExceptions
+from . import NyanPaths
+from . import NyanLogging as logging
 
 if TYPE_CHECKING:
-    from . import aNyanController
+    from . import NyanController
 
 
 class Temporary_Integer_Table_Name_Cache(object):
@@ -365,8 +365,8 @@ class DB_Cursor_Transaction_Wrapper(DB_Base):
         self._in_transaction = False
         self._transaction_contains_writes = False
 
-        self._last_mem_refresh_time = aNyanData.time_now()
-        self._last_wal_checkpoint_time = aNyanData.time_now()
+        self._last_mem_refresh_time = NyanData.time_now()
+        self._last_wal_checkpoint_time = NyanData.time_now()
 
         self._pubsubs = []
 
@@ -377,7 +377,7 @@ class DB_Cursor_Transaction_Wrapper(DB_Base):
             self._execute("BEGIN IMMEDIATE;")
             self._execute("SAVEPOINT muh_savepoint;")
 
-            self._transaction_start_time = aNyanData.time_now()
+            self._transaction_start_time = NyanData.time_now()
             self._in_transaction = True
             self._transaction_contains_writes = False
 
@@ -401,20 +401,20 @@ class DB_Cursor_Transaction_Wrapper(DB_Base):
         self._in_transaction = False
         self._transaction_contains_writes = False
 
-        if aNyanGlobals.db_journal_mode == "WAL" and aNyanData.time_has_passed(self._last_wal_checkpoint_time + 1800):
+        if NyanGlobals.db_journal_mode == "WAL" and NyanData.time_has_passed(self._last_wal_checkpoint_time + 1800):
 
             self._execute("PRAGMA wal_checkpoint(PASSIVE);")
 
-            self._last_wal_checkpoint_time = aNyanData.time_now()
+            self._last_wal_checkpoint_time = NyanData.time_now()
 
-        if aNyanData.time_has_passed(self._last_mem_refresh_time + 600):
+        if NyanData.time_has_passed(self._last_mem_refresh_time + 600):
 
             self._execute("DETACH mem;")
             self._execute('ATTACH ":memory:" AS mem;')
 
             Temporary_Integer_Table_Name_Cache.instance().clear()
 
-            self._last_mem_refresh_time = aNyanData.time_now()
+            self._last_mem_refresh_time = NyanData.time_now()
 
     def commit_and_begin(self):
 
@@ -428,7 +428,7 @@ class DB_Cursor_Transaction_Wrapper(DB_Base):
 
         for (topic, args, kwargs) in self._pubsubs:
 
-            aNyanGlobals.controller.pub(topic, *args, **kwargs)
+            NyanGlobals.controller.pub(topic, *args, **kwargs)
 
     def in_transaction(self):
 
@@ -487,7 +487,7 @@ class DB_Cursor_Transaction_Wrapper(DB_Base):
         return (
             self._in_transaction
             and self._transaction_contains_writes
-            and aNyanData.time_has_passed(self._transaction_start_time + self._transaction_commit_period)
+            and NyanData.time_has_passed(self._transaction_start_time + self._transaction_commit_period)
         )
 
 
@@ -502,7 +502,7 @@ class Nyan_DB(DB_Base):
 
     READ_WRITE_ACTIONS = ["service_info", "system_predicates", "missing_thumbnail_hashes"]
 
-    def __init__(self, controller: "aNyanController.Nyan_Controller", db_dir: str, db_name: str):
+    def __init__(self, controller: "NyanController.Nyan_Controller", db_dir: str, db_name: str):
 
         DB_Base.__init__(self)
 
@@ -524,19 +524,19 @@ class Nyan_DB(DB_Base):
 
         if os.path.exists(durable_temp_db_path):
 
-            aNyanPaths.delete_path(durable_temp_db_path)
+            NyanPaths.delete_path(durable_temp_db_path)
 
             wal_lad = durable_temp_db_path + "-wal"
 
             if os.path.exists(wal_lad):
 
-                aNyanPaths.delete_path(wal_lad)
+                NyanPaths.delete_path(wal_lad)
 
             shm_lad = durable_temp_db_path + "-shm"
 
             if os.path.exists(shm_lad):
 
-                aNyanPaths.delete_path(shm_lad)
+                NyanPaths.delete_path(shm_lad)
 
             logging.info("Found and deleted the durable temporary database on boot. The last exit was probably not clean.")
 
@@ -550,7 +550,7 @@ class Nyan_DB(DB_Base):
         self._ready_to_serve_requests = False
         self._could_not_initialise = False
 
-        self._jobs: queue.Queue[aNyanData.Job_Database] = queue.Queue()
+        self._jobs: queue.Queue[NyanData.Job_Database] = queue.Queue()
 
         self._currently_doing_job = False
         self._current_status = ""
@@ -608,7 +608,7 @@ class Nyan_DB(DB_Base):
 
                 message = message.format(", ".join(existing_external_db_paths), db_path)
 
-                raise aNyanExceptions.DB_Access_Exception(message)
+                raise NyanExceptions.DB_Access_Exception(message)
 
         self._init_db_connection()
 
@@ -626,9 +626,9 @@ class Nyan_DB(DB_Base):
 
         db_path = os.path.join(self._db_dir, self._db_filenames["main"])
 
-        if os.path.exists(db_path) and not aNyanPaths.file_is_writeable(db_path):
+        if os.path.exists(db_path) and not NyanPaths.file_is_writeable(db_path):
 
-            raise aNyanExceptions.DB_Access_Exception(f"the database: {db_path} seems to be read-only!")
+            raise NyanExceptions.DB_Access_Exception(f"the database: {db_path} seems to be read-only!")
 
         try:
 
@@ -639,10 +639,10 @@ class Nyan_DB(DB_Base):
             self._is_connected = True
 
             self._cursor_transaction_wrapper = DB_Cursor_Transaction_Wrapper(
-                self._cursor, aNyanGlobals.db_transaction_commit_period
+                self._cursor, NyanGlobals.db_transaction_commit_period
             )
 
-            if aNyanGlobals.no_db_temp_files:
+            if NyanGlobals.no_db_temp_files:
 
                 # use memory for temp store exclusively
                 self._execute("PRAGMA temp_store = 2;")
@@ -653,7 +653,7 @@ class Nyan_DB(DB_Base):
 
             self._execute('ATTACH ":memory:" AS mem;')
 
-        except aNyanExceptions.DB_Access_Exception:
+        except NyanExceptions.DB_Access_Exception:
 
             raise
 
@@ -661,7 +661,7 @@ class Nyan_DB(DB_Base):
 
             message = f"Could not connect to the database! Error follows:" + os.linesep * 2 + str(e)
 
-            raise aNyanExceptions.DB_Access_Exception(message)
+            raise NyanExceptions.DB_Access_Exception(message)
 
         Temporary_Integer_Table_Name_Cache.instance().clear()
 
@@ -671,13 +671,13 @@ class Nyan_DB(DB_Base):
         for db_name in db_names:
 
             # MB -> KB
-            cache_size = aNyanGlobals.db_cache_size * 1024
+            cache_size = NyanGlobals.db_cache_size * 1024
 
             self._execute(f"PRAGMA {db_name}.cache_size = -{cache_size};")
 
-            self._execute(f"PRAGMA {db_name}.journal_mode = {aNyanGlobals.db_journal_mode};")
+            self._execute(f"PRAGMA {db_name}.journal_mode = {NyanGlobals.db_journal_mode};")
 
-            if aNyanGlobals.db_journal_mode in ("PERSIST", "WAL"):
+            if NyanGlobals.db_journal_mode in ("PERSIST", "WAL"):
 
                 # We tried 1GB here, but I have reports of larger ones that don't seem to truncate ever?
                 # Not sure what that is about, but I guess the db sometimes doesn't want to (expensively?) recover pages from the journal and just appends more data
@@ -686,7 +686,7 @@ class Nyan_DB(DB_Base):
 
                 self._execute(f"PRAGMA {db_name}.journal_size_limit = {JOURNAL_SIZE_LIMIT};")
 
-            self._execute(f"PRAGMA {db_name}.synchronous = {aNyanGlobals.db_synchronous };")
+            self._execute(f"PRAGMA {db_name}.synchronous = {NyanGlobals.db_synchronous };")
 
             try:
 
@@ -704,7 +704,7 @@ class Nyan_DB(DB_Base):
 
                 logging.debug(message)
 
-                raise aNyanExceptions.DB_Access_Exception(message)
+                raise NyanExceptions.DB_Access_Exception(message)
 
         try:
 
@@ -722,9 +722,9 @@ class Nyan_DB(DB_Base):
 
                 logging.debug(message, e)
 
-                raise aNyanExceptions.DB_Access_Exception(message)
+                raise NyanExceptions.DB_Access_Exception(message)
 
-            raise aNyanExceptions.DB_Access_Exception(str(e))
+            raise NyanExceptions.DB_Access_Exception(str(e))
 
     def _attach_external_databases(self):
 
@@ -735,9 +735,9 @@ class Nyan_DB(DB_Base):
 
             db_path = os.path.join(self._db_dir, filename)
 
-            if os.path.exists(db_path) and not aNyanPaths.file_is_writeable(db_path):
+            if os.path.exists(db_path) and not NyanPaths.file_is_writeable(db_path):
 
-                raise aNyanExceptions.DB_Access_Exception(f"the database: {db_path} seems to be read-only!")
+                raise NyanExceptions.DB_Access_Exception(f"the database: {db_path} seems to be read-only!")
 
             self._execute(f"ATTACH ? AS {name};", (db_path,))
 
@@ -781,7 +781,7 @@ class Nyan_DB(DB_Base):
 
         logging.critical(message)
 
-    def _process_job(self, job: aNyanData.Job_Database):
+    def _process_job(self, job: NyanData.Job_Database):
 
         job_type = job.get_type()
 
@@ -843,7 +843,7 @@ class Nyan_DB(DB_Base):
 
                 self._init_db_connection()
 
-                aNyanData.print_exception(rollback_e)
+                NyanData.print_exception(rollback_e)
 
         finally:
 
@@ -863,7 +863,7 @@ class Nyan_DB(DB_Base):
 
     def _generate_db_job(self, job_type, synchronous, action, *args, **kwargs):
 
-        return aNyanData.Job_Database(job_type, synchronous, action, *args, **kwargs)
+        return NyanData.Job_Database(job_type, synchronous, action, *args, **kwargs)
 
     def _unload_modules(self):
 
@@ -966,9 +966,9 @@ class Nyan_DB(DB_Base):
 
         job = self._generate_db_job(job_type, synchronous, action, *args, **kwargs)
 
-        if aNyanGlobals.model_shutdown:
+        if NyanGlobals.model_shutdown:
 
-            raise aNyanExceptions.Shutdown_Exception("Application has shut down!")
+            raise NyanExceptions.Shutdown_Exception("Application has shut down!")
 
         self._jobs.put(job)
 
@@ -980,9 +980,9 @@ class Nyan_DB(DB_Base):
 
         job = self._generate_db_job(job_type, synchronous, action, *args, **kwargs)
 
-        if aNyanGlobals.model_shutdown:
+        if NyanGlobals.model_shutdown:
 
-            raise aNyanExceptions.Shutdown_Exception("Application has shut down!")
+            raise NyanExceptions.Shutdown_Exception("Application has shut down!")
 
         self._jobs.put(job)
 
@@ -1010,7 +1010,7 @@ class Nyan_DB(DB_Base):
 
         error_count = 0
 
-        while not ((self._local_shutdown or aNyanGlobals.model_shutdown) and self._jobs.empty()):
+        while not ((self._local_shutdown or NyanGlobals.model_shutdown) and self._jobs.empty()):
 
             try:
 
@@ -1023,7 +1023,7 @@ class Nyan_DB(DB_Base):
 
                 try:
 
-                    if aNyanGlobals.db_report_mode:
+                    if NyanGlobals.db_report_mode:
 
                         summary = "Running db job: " + job.to_string()
 
@@ -1062,7 +1062,7 @@ class Nyan_DB(DB_Base):
 
                 while self._pause_and_disconnect:
 
-                    if self._local_shutdown or aNyanGlobals.model_shutdown:
+                    if self._local_shutdown or NyanGlobals.model_shutdown:
 
                         break
 
@@ -1074,6 +1074,6 @@ class Nyan_DB(DB_Base):
 
         temp_path = os.path.join(self._db_dir, self._durable_temp_db_filename)
 
-        aNyanPaths.delete_path(temp_path)
+        NyanPaths.delete_path(temp_path)
 
         self._loop_finished = True

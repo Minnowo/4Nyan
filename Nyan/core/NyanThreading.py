@@ -8,27 +8,27 @@ import random
 import bisect
 from typing import Callable, TYPE_CHECKING
 
-from . import aNyanData
-from . import aNyanExceptions
-from . import aNyanGlobals
-from . import aNyanLogging as logging
+from . import NyanData
+from . import NyanExceptions
+from . import NyanGlobals
+from . import NyanLogging as logging
 
 if TYPE_CHECKING:
-    from . import aNyanController
+    from . import NyanController
 
 
-NEXT_THREAD_CLEAROUT = 0
+NEXT_THREAD_CLEAROUT: int = 0
 
-THREADS_TO_THREAD_INFO = {}
+THREADS_TO_THREAD_INFO: dict[threading.Thread, dict] = {}
 
-THREAD_INFO_LOCK = threading.Lock()
+THREAD_INFO_LOCK: threading.Lock = threading.Lock()
 
 
 def die_if_thread_is_shutting_down():
 
     if is_thread_shutting_down():
 
-        raise aNyanExceptions.Shutdown_Exception("Thread is shutting down!")
+        raise NyanExceptions.Shutdown_Exception("Thread is shutting down!")
 
 
 def clear_out_dead_threads():
@@ -46,11 +46,11 @@ def get_thread_info(thread: threading.Thread = None):
 
     global NEXT_THREAD_CLEAROUT
 
-    if aNyanData.time_has_passed(NEXT_THREAD_CLEAROUT):
+    if NyanData.time_has_passed(NEXT_THREAD_CLEAROUT):
 
         clear_out_dead_threads()
 
-        NEXT_THREAD_CLEAROUT = aNyanData.time_now() + 600
+        NEXT_THREAD_CLEAROUT = NyanData.time_now() + 600
 
     if thread is None:
 
@@ -69,7 +69,7 @@ def is_thread_shutting_down():
 
     if isinstance(threading.current_thread(), Daemon):
 
-        if aNyanGlobals.started_shutdown:
+        if NyanGlobals.started_shutdown:
 
             return True
 
@@ -88,7 +88,7 @@ def shutdown_thread(thread: threading.Thread):
 def Subprocess_Communicate(process: subprocess.Popen):
     def do_test():
 
-        if aNyanGlobals.started_shutdown:
+        if NyanGlobals.started_shutdown:
 
             try:
 
@@ -98,7 +98,7 @@ def Subprocess_Communicate(process: subprocess.Popen):
 
                 pass
 
-            raise aNyanExceptions.Shutdown_Exception("Application is shutting down!")
+            raise NyanExceptions.Shutdown_Exception("Application is shutting down!")
 
     do_test()
 
@@ -125,7 +125,7 @@ class Daemon(threading.Thread):
 
     def _do_pre_call(self):
 
-        if aNyanGlobals.daemon_report_mode:
+        if NyanGlobals.daemon_report_mode:
 
             logging.info(self._name + " doing a job.")
 
@@ -197,9 +197,9 @@ class Daemon_Worker(Daemon):
 
     def _do_await(self, wait_time, event_can_wake=True):
 
-        time_to_start = aNyanData.time_now() + wait_time
+        time_to_start = NyanData.time_now() + wait_time
 
-        while not aNyanData.time_has_passed(time_to_start):
+        while not NyanData.time_has_passed(time_to_start):
 
             if event_can_wake:
 
@@ -256,7 +256,7 @@ class Daemon_Worker(Daemon):
 
                     self._callable(self._controller)
 
-                except aNyanExceptions.Shutdown_Exception:
+                except NyanExceptions.Shutdown_Exception:
 
                     return
 
@@ -264,11 +264,11 @@ class Daemon_Worker(Daemon):
 
                     logging.error("Daemon " + self._name + " encountered an exception:")
 
-                    aNyanData.print_exception(e)
+                    NyanData.print_exception(e)
 
                 self._do_await(self._period)
 
-        except aNyanExceptions.Shutdown_Exception:
+        except NyanExceptions.Shutdown_Exception:
 
             return
 
@@ -298,7 +298,7 @@ class Thread_Call_To_Thread(Daemon):
     This thread waits until a given callback is recieved before performing any jobs.
     """
 
-    def __init__(self, controller: "aNyanController.Nyan_Controller", name: str):
+    def __init__(self, controller: "NyanController.Nyan_Controller", name: str):
 
         Daemon.__init__(self, controller, name)
 
@@ -364,13 +364,13 @@ class Thread_Call_To_Thread(Daemon):
 
                     del callable
 
-                except aNyanExceptions.Shutdown_Exception:
+                except NyanExceptions.Shutdown_Exception:
 
                     return
 
                 except Exception as e:
 
-                    aNyanData.print_exception(e)
+                    NyanData.print_exception(e)
 
                 finally:
 
@@ -378,7 +378,7 @@ class Thread_Call_To_Thread(Daemon):
 
                 time.sleep(0.00001)
 
-        except aNyanExceptions.Shutdown_Exception:
+        except NyanExceptions.Shutdown_Exception:
 
             return
 
@@ -515,7 +515,7 @@ class Job_Scheduler(threading.Thread):
 
         with self._waiting_lock:
 
-            return aNyanData.to_human_int(len(self._waiting)) + " jobs"
+            return NyanData.to_human_int(len(self._waiting)) + " jobs"
 
     def get_jobs(self):
 
@@ -531,7 +531,7 @@ class Job_Scheduler(threading.Thread):
 
             job_lines = [repr(job) for job in self._waiting]
 
-            lines = [aNyanData.to_human_int(num_jobs) + " jobs:"] + job_lines
+            lines = [NyanData.to_human_int(num_jobs) + " jobs:"] + job_lines
 
             text = os.linesep.join(lines)
 
@@ -585,7 +585,7 @@ class Job_Scheduler(threading.Thread):
 
                 self._start_work()
 
-            except aNyanExceptions.Shutdown_Exception:
+            except NyanExceptions.Shutdown_Exception:
 
                 return
 
@@ -593,7 +593,7 @@ class Job_Scheduler(threading.Thread):
 
                 logging.error(traceback.format_exc())
 
-                aNyanData.print_exception(e)
+                NyanData.print_exception(e)
 
             time.sleep(0.00001)
 
@@ -604,10 +604,10 @@ class Schedulable_Job(object):
 
     def __init__(
         self,
-        controller: "aNyanController.Nyan_Controller",
+        controller: "NyanController.Nyan_Controller",
         scheduler: Job_Scheduler,
         initial_delay_seconds: float,
-        work_callable: aNyanData.Call,
+        work_callable: NyanData.Call,
     ):
 
         self._controller = controller
@@ -616,7 +616,7 @@ class Schedulable_Job(object):
 
         self._should_delay_on_wakeup = False
 
-        self._next_work_time = aNyanData.time_now_float() + initial_delay_seconds
+        self._next_work_time = NyanData.time_now_float() + initial_delay_seconds
 
         self._thread_slot_type = None
 
@@ -649,9 +649,9 @@ class Schedulable_Job(object):
 
     def get_due_string(self):
 
-        due_delta = self._next_work_time - aNyanData.time_now_float()
+        due_delta = self._next_work_time - NyanData.time_now_float()
 
-        due_string = aNyanData.time_delta_to_pretty_time_delta(due_delta)
+        due_string = NyanData.time_delta_to_pretty_time_delta(due_delta)
 
         if due_delta < 0:
 
@@ -673,7 +673,7 @@ class Schedulable_Job(object):
 
     def get_time_delta_until_due(self):
 
-        return aNyanData.time_delta_until_time_float(self._next_work_time)
+        return NyanData.time_delta_until_time_float(self._next_work_time)
 
     def is_cancelled(self):
 
@@ -685,7 +685,7 @@ class Schedulable_Job(object):
 
     def is_due(self):
 
-        return aNyanData.time_has_passed_float(self._next_work_time)
+        return NyanData.time_has_passed_float(self._next_work_time)
 
     def pub_sub_wake(self, *args, **kwargs):
 
@@ -709,7 +709,7 @@ class Schedulable_Job(object):
 
             else:
 
-                self._next_work_time = aNyanData.time_now_float() + 10 + random.random()
+                self._next_work_time = NyanData.time_now_float() + 10 + random.random()
 
                 return False
 
@@ -729,7 +729,7 @@ class Schedulable_Job(object):
 
         if next_work_time is None:
 
-            next_work_time = aNyanData.time_now_float()
+            next_work_time = NyanData.time_now_float()
 
         self._next_work_time = next_work_time
 
@@ -772,10 +772,10 @@ class Single_Job(Schedulable_Job):
 
     def __init__(
         self,
-        controller: "aNyanController.Nyan_Controller",
+        controller: "NyanController.Nyan_Controller",
         scheduler: Job_Scheduler,
         initial_delay_seconds: float,
-        work_callable: aNyanData.Call,
+        work_callable: NyanData.Call,
     ):
 
         Schedulable_Job.__init__(self, controller, scheduler, initial_delay_seconds, work_callable)
@@ -799,11 +799,11 @@ class Repeating_Job(Schedulable_Job):
 
     def __init__(
         self,
-        controller: "aNyanController.Nyan_Controller",
+        controller: "NyanController.Nyan_Controller",
         scheduler: Job_Scheduler,
         initial_delay: float,
         period: float,
-        work_callable: aNyanData.Call,
+        work_callable: NyanData.Call,
     ):
 
         Schedulable_Job.__init__(self, controller, scheduler, initial_delay, work_callable)
@@ -820,7 +820,7 @@ class Repeating_Job(Schedulable_Job):
 
     def delay(self, delay):
 
-        self._next_work_time = aNyanData.time_now_float() + delay
+        self._next_work_time = NyanData.time_now_float() + delay
 
         self._scheduler.work_times_have_changed()
 
@@ -842,6 +842,6 @@ class Repeating_Job(Schedulable_Job):
 
         if not self._stop_repeating.is_set():
 
-            self._next_work_time = aNyanData.time_now_float() + self._period
+            self._next_work_time = NyanData.time_now_float() + self._period
 
             self._scheduler.add_job(self)

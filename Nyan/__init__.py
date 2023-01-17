@@ -3,13 +3,13 @@ import logging
 from .api import APIConstants, APIFastAPI
 from .api.services import ServiceYoutTubePlaylistDL, ServiceFiles, ServiceTest
 
-from .core import aNyanLogging, aNyanDB, aNyanController, aNyanData, aNyanConstants
+from .core import NyanController, NyanDB, NyanData, NyanLogging, NyanConstants
 
 
-class DB(aNyanDB.Nyan_DB):
+class DB(NyanDB.Nyan_DB):
     def __init__(self, controller, db_dir, db_name):
 
-        aNyanDB.Nyan_DB.__init__(self, controller, db_dir, db_name)
+        NyanDB.Nyan_DB.__init__(self, controller, db_dir, db_name)
 
     def _load_modules(self):
         pass
@@ -25,7 +25,7 @@ class DB(aNyanDB.Nyan_DB):
         self._execute(
             "CREATE TABLE IF NOT EXISTS options ( options TEXT_YAML );",
         )
-        self._execute("INSERT INTO version ( version ) VALUES ( ? );", (aNyanConstants.SOFTWARE_VERSION,))
+        self._execute("INSERT INTO version ( version ) VALUES ( ? );", (core.SOFTWARE_VERSION,))
 
     def _init_external_databases(self):
         pass
@@ -54,7 +54,7 @@ class DB(aNyanDB.Nyan_DB):
         pass
 
 
-class Controller(aNyanController.Nyan_Controller):
+class Controller(NyanController.Nyan_Controller):
     def _init_db(self):
         return DB(self, self.db_dir, "main")
 
@@ -87,7 +87,7 @@ def __real_main():
         pass
 
     except Exception as e:
-        aNyanData.print_exception(e, True)
+        NyanData.print_exception(e, True)
 
     finally:
 
@@ -96,6 +96,6 @@ def __real_main():
 
 def main():
 
-    aNyanLogging.setup_and_show_startup_message(log_file="./logs.log", log_level=logging.INFO)
+    NyanLogging.setup_and_show_startup_message(log_file="./logs.log", log_level=logging.INFO)
 
     __real_main()

@@ -4,7 +4,8 @@ import traceback
 import os
 import json
 import threading
-from typing import Union, Callable
+import collections
+from typing import Union, Callable, TYPE_CHECKING
 
 try:
     import psutil
@@ -16,11 +17,14 @@ except ImportError:
     PSUTIL_OK = False
 
 
-from . import aNyanExceptions
-from . import aNyanConstants
-from . import aNyanPaths
-from . import aNyanGlobals
-from . import aNyanLogging as logging
+from . import NyanExceptions
+from . import NyanConstants
+from . import NyanPaths
+from . import NyanGlobals
+from . import NyanLogging as logging
+
+if TYPE_CHECKING:
+    from . import NyanController
 
 
 def get_create_time():
@@ -36,7 +40,7 @@ def get_create_time():
 
             pass
 
-    return aNyanConstants.START_TIME
+    return NyanConstants.START_TIME
 
 
 def get_up_time():
@@ -129,9 +133,9 @@ def print_exception_tuple(etype, value, trace, do_wait=True):
 
     if etype is None:
 
-        etype = aNyanExceptions.UnknownException
+        etype = NyanExceptions.UnknownException
 
-    if etype == aNyanExceptions.Shutdown_Exception:
+    if etype == NyanExceptions.Shutdown_Exception:
 
         return
 
@@ -177,9 +181,9 @@ def record_running_start(db_path, instance):
 
             return
 
-    record_string += f"[os]{os.linesep}{os.getpid()}{os.linesep}{aNyanConstants.START_TIME_FLOAT}"
+    record_string += f"[os]{os.linesep}{os.getpid()}{os.linesep}{NyanConstants.START_TIME_FLOAT}"
 
-    aNyanPaths.make_sure_directory_exists(os.path.dirname(path))
+    NyanPaths.make_sure_directory_exists(os.path.dirname(path))
 
     with open(path, "w", encoding="utf-8") as f:
 
@@ -462,9 +466,9 @@ class Job_Database(object):
 
                 break
 
-            if aNyanGlobals.model_shutdown:
+            if NyanGlobals.model_shutdown:
 
-                raise aNyanExceptions.Shutdown_Exception("Application quit before db could serve result!")
+                raise NyanExceptions.Shutdown_Exception("Application quit before db could serve result!")
 
             self._do_delayed_result_relief()
 
@@ -477,3 +481,181 @@ class Job_Database(object):
         else:
 
             return self._result
+
+
+class Data_Cache(object):
+    def __init__(self, controller: "NyanController.Nyan_Controller", name: str, timeout: int = 1200):
+
+        self._controller: "NyanController.Nyan_Controller" = controller
+        self._name: str = name
+        self._timeout: int = timeout
+
+        self._keys_to_data: dict[str] = {}
+        self._keys_fifo: dict[str, int] = collections.OrderedDict()
+
+        self._lock = threading.Lock()
+
+        self._controller.sub(self, "maintain_cache", "memory_maintenance_pulse")
+
+    def _delete(self, key: str):
+
+        if key not in self._keys_to_data:
+            return
+
+        del self._keys_to_data[key]
+
+    def _delete_item(self):
+
+        (delete_key, last_access_time) = self._keys_fifo.popitem(last=False)
+
+        self._delete(delete_key)
+
+    def _touch_key(self, key):
+
+        # have to delete first, rather than overwriting, so the ordereddict updates its internal order
+        if key in self._keys_fifo:
+
+            del self._keys_fifo[key]
+
+        self._keys_fifo[key] = time_now()
+
+    def clear(self):
+
+        with self._lock:
+
+            self._keys_to_data = {}
+            self._keys_fifo = collections.OrderedDict()
+
+    def add_data(self, key, data, replace=False):
+
+        with self._lock:
+
+            if key in self._keys_to_data and not replace:
+                return
+
+            self._keys_to_data[key] = data
+
+            self._touch_key(key)
+
+    def delete_data(self, key):
+
+        with self._lock:
+
+            self._delete(key)
+
+    def get_data(self, key):
+
+        with self._lock:
+
+            if key not in self._keys_to_data:
+
+                raise NyanExceptions.Cache_Lookup_Exception(f"Cache error! Looking for {key}, but it was missing.")
+
+            self._touch_key(key)
+
+            return self._keys_to_data[key]
+
+    def get_if_has_data(self, key):
+
+        with self._lock:
+
+            if key in self._keys_to_data:
+
+                self._touch_key(key)
+
+                return self._keys_to_data[key]
+
+            return None
+
+    def has_data(self, key):
+
+        with self._lock:
+
+            return key in self._keys_to_data
+
+    def maintain_cache(self):
+
+        with self._lock:
+
+            while True:
+
+                if len(self._keys_fifo) == 0:
+
+                    return
+
+                (key, last_access_time) = next(iter(self._keys_fifo.items()))
+
+                if time_has_passed(last_access_time + self._timeout):
+
+                    self._delete_item()
+
+                else:
+
+                    break
+
+    def set_timeout(self, timeout: int):
+
+        with self._lock:
+
+            self._timeout = timeout
+
+        self.maintain_cache()
+
+
+class Expiring_Data_Cache(Data_Cache):
+    def __init__(self, controller: "NyanController.Nyan_Controller", name: str, timeout: int = 1200):
+        Data_Cache.__init__(self, controller, name, timeout)
+
+    def get_data(self, key):
+
+        with self._lock:
+
+            if key not in self._keys_to_data:
+
+                raise NyanExceptions.Cache_Lookup_Exception(f"Cache error! Looking for {key}, but it was missing.")
+
+            data_added_time = self._keys_fifo[key]
+
+            if time_has_passed(data_added_time + self._timeout):
+
+                raise NyanExceptions.Cache_Expired_Exception(f"Cache error! Data for {key} has expired.")
+
+            return self._keys_to_data[key]
+
+    def get_if_has_data(self, key):
+
+        with self._lock:
+
+            if key in self._keys_to_data:
+
+                data_added_time = self._keys_fifo[key]
+
+                if time_has_passed(data_added_time + self._timeout):
+
+                    raise NyanExceptions.Cache_Expired_Exception(f"Cache error! Data for {key} has expired.")
+
+                return self._keys_to_data[key]
+
+            return None
+
+    def get_if_has_non_expired_data(self, key):
+
+        with self._lock:
+
+            if key in self._keys_to_data:
+
+                data_added_time = self._keys_fifo[key]
+
+                if time_has_passed(data_added_time + self._timeout):
+
+                    return None
+
+                return self._keys_to_data[key]
+
+            return None
+
+    def has_non_expired_data(self, key):
+
+        with self._lock:
+
+            return key in self._keys_to_data and not time_has_passed(self._keys_fifo[key] + self._timeout)

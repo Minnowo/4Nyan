@@ -9,6 +9,6 @@ if __package__ is None and not hasattr(sys, "frozen"):
 
 
 if __name__ == "__main__":
-    import aNyan
+    import Nyan
 
-    sys.exit(aNyan.main())
+    sys.exit(Nyan.main())

@@ -16,7 +16,7 @@ except ImportError:
 from fastapi import Request, HTTPException, status
 from urllib.parse import urlparse, parse_qs
 from .. import APIFastAPI, APIExceptions, APIConstants, APIPaths
-from ...core import aNyanController, aNyanLogging as logging, aNyanData
+from ...core import NyanController, NyanData, NyanLogging as logging, NyanExceptions, NyanGlobals
 
 
 class YT_DLP_Logger:
@@ -55,30 +55,14 @@ class YT_DLP_Logger:
 
 
 class Youtube_Playlist_DL_Service(APIFastAPI.Nyan_Router):
-    def __init__(self, controller: aNyanController.Nyan_Controller):
+    def __init__(self, controller: NyanController.Nyan_Controller):
         APIFastAPI.Nyan_Router.__init__(self, "Youtube Playlist Service", controller)
 
         self.yt_dlp_logger = YT_DLP_Logger()
 
         self.add_api_route("/svc/get-yt-playlist", self.route_get_playlist_entries, methods=["GET"])
 
-        self._results_cache_thread_lock = threading.Lock()
-
-        self.results_cache = {}
-
-        self.controller.sub(self, "maintain_results_cache", "memory_maintenance_pulse")
-
-    def maintain_results_cache(self):
-
-        with self._results_cache_thread_lock:
-
-            for i in list(self.results_cache.keys()):
-
-                if aNyanData.time_has_passed(self.results_cache[i]["time"]):
-
-                    del self.results_cache[i]
-
-                    logging.debug(f"{self.name} memory_maintenance_pulse: Removing {i} from cache")
+        self.results_cache = NyanData.Expiring_Data_Cache(controller, self.name + ": Playlist Result Cache", 60)
 
     def decode_b64(self, value: str):
 
@@ -92,6 +76,7 @@ class Youtube_Playlist_DL_Service(APIFastAPI.Nyan_Router):
             logging.debug(f"Failed to decode base64: {value}", e)
             return ""
 
+    @APIFastAPI.Nyan_Router.die_if_shutdown_endpoint_wrapper_async
     async def route_get_playlist_entries(self, request: Request):
 
         PLAYLIST_FORMAT = "https://www.youtube.com/playlist?list={}"
@@ -151,20 +136,20 @@ class Youtube_Playlist_DL_Service(APIFastAPI.Nyan_Router):
     def yt_dlp_progress_hook(self, arg):
         pass
 
+    @APIFastAPI.Nyan_Router.die_if_shutdown_wrapper
     def get_playlist_urls_wrapped(self, playlist_url: list[str]):
 
         result = {}
 
         for url in set(playlist_url):
 
-            with self._results_cache_thread_lock:
-                # if the url is in the cache, and the cache time has not expired
-                # take the data from the cache, and remove the value from out list
-                if url in self.results_cache and not aNyanData.time_has_passed(self.results_cache[url]["time"]):
+            if self.results_cache.has_non_expired_data(url):
 
-                    result[url] = self.results_cache[url]["data"]
+                result[url] = self.results_cache.get_data(url)
 
-                    playlist_url = list(filter(url.__ne__, playlist_url))
+                playlist_url = list(filter(url.__ne__, playlist_url))
+
+                logging.debug(f"Cache hit for key {url}")
 
         try:
             new_results = self.get_playlist_urls(playlist_url)
@@ -172,9 +157,7 @@ class Youtube_Playlist_DL_Service(APIFastAPI.Nyan_Router):
             # dump our new values into the cache, expires in 60 seconds
             for key, value in new_results.items():
 
-                with self._results_cache_thread_lock:
-
-                    self.results_cache[key] = {"time": aNyanData.time_now() + 60, "data": value}
+                self.results_cache.add_data(key, value, replace=True)
 
             result.update(new_results)
 
@@ -186,6 +169,7 @@ class Youtube_Playlist_DL_Service(APIFastAPI.Nyan_Router):
 
             raise APIExceptions.API_500_NOT_IMPLEMENTED
 
+    @APIFastAPI.Nyan_Router.die_if_shutdown_wrapper
     def get_playlist_urls(self, playlist_url: list[str]):
 
         if not YT_DL_OK:
@@ -204,13 +188,17 @@ class Youtube_Playlist_DL_Service(APIFastAPI.Nyan_Router):
 
         ydl_opts["logger"] = self.yt_dlp_logger
         ydl_opts["progress_hooks"] = [self.yt_dlp_progress_hook]
-        ydl_opts["external_downloader_args"] = ['-loglevel', 'panic']
+        ydl_opts["external_downloader_args"] = ["-loglevel", "panic"]
+
+        self.die_if_shutdown()
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
 
             for url in playlist_url:
 
                 data = ydl.extract_info(url, download=False)
+
+                self.die_if_shutdown()
 
                 if self.yt_dlp_logger.last_err or not data:
 

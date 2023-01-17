@@ -3,11 +3,11 @@ import os
 from fastapi import Request, Response
 
 from .. import APIFastAPI, APIExceptions, APIConstants, APIPaths
-from ...core import aNyanController
+from ...core import NyanController
 
 
 class File_Service(APIFastAPI.Nyan_Router):
-    def __init__(self, controller: aNyanController.Nyan_Controller):
+    def __init__(self, controller: NyanController.Nyan_Controller):
 
         APIFastAPI.Nyan_Router.__init__(self, "File Service", controller)
 
@@ -20,19 +20,21 @@ class File_Service(APIFastAPI.Nyan_Router):
             # "t": APIFiles.get_thumbnail,
         }
 
+    @APIFastAPI.Nyan_Router.die_if_shutdown_endpoint_wrapper_async
     async def staticv1(self, request: Request, category: str, path: str):
 
         callback = self.staticv1_function_map.get(category, None)
 
         if callback:
 
-            return callback(self, request, path)
+            return await callback(request, path)
 
         raise APIExceptions.API_404_NOT_FOUND_EXCEPTION
 
+    @APIFastAPI.Nyan_Router.die_if_shutdown_wrapper_async
     async def stream_video(self, request: Request, path: str):
 
-        video_name = APIPaths.get_valid_path_or_die(path, APIConstants.STATIC_VIDEO_PATH)
+        video_name = APIPaths.get_valid_path_or_die((APIConstants.STATIC_VIDEO_PATH, path))
 
         # get start byte range from header, default to 0
         _range = APIConstants.RANGE_HEADER.search(request.headers.get("range", "bytes=0-"))

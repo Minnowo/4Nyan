@@ -2,9 +2,9 @@ import sys
 import os
 import logging
 
-from . import aNyanConstants
+from . import NyanConstants
 
-LOGGER_INSTANCE = logging.getLogger(aNyanConstants.BRAND)
+LOGGER_INSTANCE = logging.getLogger(NyanConstants.BRAND)
 
 debug = LOGGER_INSTANCE.debug
 info = LOGGER_INSTANCE.info
@@ -41,13 +41,13 @@ def create_setup_logger(name: str = None, log_file: str = "", log_level=logging.
 
 def setup_logger(log_file: str = "", log_level=logging.DEBUG):
 
-    create_setup_logger(aNyanConstants.BRAND, log_file, log_level)
+    create_setup_logger(NyanConstants.BRAND, log_file, log_level)
 
 
 def show_startup_message(message: str = None):
 
     LOGGER_INSTANCE.info("~[__^w^_  <3  <3")
-    LOGGER_INSTANCE.info(f"4Nyan starting. Time: {aNyanConstants.START_TIME_PRETTY}")
+    LOGGER_INSTANCE.info(f"4Nyan starting. Time: {NyanConstants.START_TIME_PRETTY}")
 
     if message:
         LOGGER_INSTANCE.info(message)

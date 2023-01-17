@@ -62,3 +62,5 @@ API_500_NOT_IMPLEMENTED = HTTPException(
     status_code=500,
     detail="Not implemented",
 )
+
+API_500_SHUTTING_DOWN_EXCEPTION = HTTPException(status_code=500, detail="Server error")

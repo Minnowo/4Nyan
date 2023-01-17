@@ -2,10 +2,10 @@ import os
 import shutil
 import stat
 
-from . import aNyanData
-from . import aNyanConstants
-from . import aNyanGlobals
-from . import aNyanLogging as logging
+from . import NyanData
+from . import NyanConstants
+from . import NyanGlobals
+from . import NyanLogging as logging
 
 
 def make_sure_directory_exists(path: str):
@@ -35,7 +35,7 @@ def directory_is_writeable(path: str):
 
 def delete_path(path):
 
-    if aNyanGlobals.file_report_mode:
+    if NyanGlobals.file_report_mode:
 
         logging.info("Deleting {}".format(path))
 
@@ -64,7 +64,7 @@ def delete_path(path):
         else:
 
             logging.error("Trying to delete " + path + " caused the following error:")
-            aNyanData.print_exception(e)
+            NyanData.print_exception(e)
 
 
 def try_to_make_file_writeable(path: str):
@@ -83,7 +83,7 @@ def try_to_make_file_writeable(path: str):
 
         current_bits = stat_result.st_mode
 
-        if aNyanGlobals.PLATFORM_WINDOWS:
+        if NyanGlobals.PLATFORM_WINDOWS:
 
             # this is actually the same value as S_IWUSR, but let's not try to second guess ourselves
             desired_bits = stat.S_IREAD | stat.S_IWRITE

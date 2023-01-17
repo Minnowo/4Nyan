@@ -1,15 +1,15 @@
 from . import (
-    aNyanConstants,
-    aNyanController,
-    aNyanData,
-    aNyanDB,
-    aNyanExceptions,
-    aNyanGlobals,
-    aNyanLogging,
-    aNyanPaths,
-    aNyanPubSub,
-    aNyanTemp,
-    aNyanThreading,
+    NyanController,
+    NyanDB,
+    NyanData,
+    NyanExceptions,
+    NyanGlobals,
+    NyanLogging,
+    NyanPaths,
+    NyanPubSub,
+    NyanTemp,
+    NyanThreading,
+    NyanConstants,
 )
 
 import logging
@@ -22,7 +22,7 @@ def useful_thread_callback(controller, nyah):
 
     print("thread callback invoked", controller, nyah)
 
-    print(aNyanGlobals.debug_value)
+    print(NyanGlobals.debug_value)
 
 
 def threading_test(controller=None):
@@ -30,12 +30,12 @@ def threading_test(controller=None):
     try:
 
         if controller is None:
-            controller = aNyanController.Nyan_Controller("./db")
+            controller = NyanController.Nyan_Controller("./db")
             controller.record_running_start()
             controller.init_model()
 
         # thred = aNyanThreading.Daemon_Worker(controller, "test-daemon-thread", useful_thread_callback, period=10)
-        thred = aNyanThreading.Thread_Call_To_Thread(controller, "threadcall")
+        thred = NyanThreading.Thread_Call_To_Thread(controller, "threadcall")
         thred.start()
 
         while True:
@@ -56,11 +56,11 @@ def threading_test(controller=None):
 
             elif i.startswith("shutdown"):
 
-                aNyanGlobals.debug_value = True
+                NyanGlobals.debug_value = True
 
     except Exception as e:
 
-        aNyanData.print_exception(e)
+        NyanData.print_exception(e)
 
     finally:
 
@@ -76,14 +76,14 @@ def test_pubsub(controller=None):
 
             print("Got notification:", *args, "on thread:", threading.current_thread().getName())
 
-    thread = aNyanThreading.Thread_Call_To_Thread(None, "pubsub_process_call_to_thread")
-    pubsub = aNyanPubSub.Nyan_PubSub()
+    thread = NyanThreading.Thread_Call_To_Thread(None, "pubsub_process_call_to_thread")
+    pubsub = NyanPubSub.Nyan_PubSub()
 
     global is_shutting_down
 
     is_shutting_down = False
 
-    def pubsub_daemon(pubsub: aNyanPubSub.Nyan_PubSub):
+    def pubsub_daemon(pubsub: NyanPubSub.Nyan_PubSub):
 
         global is_shutting_down
 
@@ -154,8 +154,8 @@ def test_pubsub(controller=None):
 
 
 def main():
-    aNyanGlobals.daemon_report_mode = True
-    aNyanLogging.setup_logger(aNyanConstants.BRAND, "./logs.log")
+    NyanGlobals.daemon_report_mode = True
+    NyanLogging.setup_logger(NyanConstants.BRAND, "./logs.log")
 
     # controller = aNyanController.Nyan_Controller("./db")
     # controller.record_running_start()

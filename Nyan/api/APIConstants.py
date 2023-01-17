@@ -1,8 +1,8 @@
 import os
 
-from ..core import aNyanData
+from ..core import NyanData
 
-env: dict = aNyanData.get_envvars()
+env: dict = NyanData.get_envvars()
 
 MAX_USERNAME_LENGTH = 32
 MIN_USERNAME_LEGNTH = 4

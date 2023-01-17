@@ -3,14 +3,14 @@ import weakref
 
 from typing import Union, Callable
 
-from . import aNyanData
-from . import aNyanExceptions
-from . import aNyanGlobals
-from . import aNyanLogging as logging
+from . import NyanData
+from . import NyanExceptions
+from . import NyanGlobals
+from . import NyanLogging as logging
 
 
 class Nyan_PubSub(object):
-    def __init__(self, valid_callable: Union[Callable, aNyanData.Call] = None):
+    def __init__(self, valid_callable: Union[Callable, NyanData.Call] = None):
 
         if valid_callable is None:
 
@@ -102,7 +102,7 @@ class Nyan_PubSub(object):
                     # don't want to report the showtext we just send here!
                     not_a_report = topic != "message"
 
-                    if aNyanGlobals.pubsub_report_mode and not_a_report:
+                    if NyanGlobals.pubsub_report_mode and not_a_report:
 
                         logging.info((topic, args, kwargs, callable_tuples))
 
@@ -112,13 +112,13 @@ class Nyan_PubSub(object):
 
                             callable(*args, **kwargs)
 
-                        except aNyanExceptions.Shutdown_Exception:
+                        except NyanExceptions.Shutdown_Exception:
 
                             return False
 
                 except Exception as e:
 
-                    aNyanData.print_exception(e)
+                    NyanData.print_exception(e)
 
         finally:
 
